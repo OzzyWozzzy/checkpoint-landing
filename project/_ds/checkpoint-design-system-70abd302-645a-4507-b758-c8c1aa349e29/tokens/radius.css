@@ -1,0 +1,12 @@
+/* ============================================================
+   Checkpoint — Radius.  Slightly soft, not bubbly.
+   sm 6 · md 10 · lg 14 · pill 999
+   ============================================================ */
+:root {
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+}

@@ -1,0 +1,100 @@
+/* ============================================================
+   Checkpoint — Color tokens
+   Mission Control: near-black instrument base, signal-lime brand,
+   severity as the spine (critical / warning / healthy / info).
+   Dark-first. Every surface is a border + background step, not a shadow.
+   ============================================================ */
+:root {
+  /* --- Base neutral ramp (deep slate, slightly cool) --------- */
+  --slate-0:  #07090d;   /* deepest — app letterbox / behind everything */
+  --slate-1:  #0b0e13;   /* app background */
+  --slate-2:  #11151c;   /* raised surface / panels */
+  --slate-3:  #161b23;   /* cards */
+  --slate-4:  #1c222c;   /* card hover / inset wells */
+  --slate-5:  #242c38;   /* borders (strong) */
+  --slate-6:  #2e3744;   /* hairline on dark */
+  --slate-7:  #3a4554;   /* disabled fg / dividers up */
+  --slate-8:  #55636f;   /* muted text */
+  --slate-9:  #8b97a6;   /* secondary text */
+  --slate-10: #b9c2cf;   /* body text on dark */
+  --slate-11: #dde3ea;   /* high text */
+  --slate-12: #f3f6fa;   /* max / headings */
+  --white:    #ffffff;
+  --black:    #000000;
+
+  /* --- Signal lime (brand accent — "live", primary action) ---- */
+  --lime-muted: #3f4a1f;
+  --lime-dim:   #9bc230;
+  --lime:       #c8f65d;   /* primary brand accent */
+  --lime-bright:#d6ff6e;
+  --lime-on:    #161b00;   /* text/icon sitting on lime fills */
+
+  /* --- Severity / semantic ramps ----------------------------- */
+  /* critical (red) */
+  --critical-bg:   #2a1416;
+  --critical-dim:  #5e2a2e;
+  --critical:      #f2555a;
+  --critical-bright:#ff7176;
+  /* warning (amber) */
+  --warning-bg:    #2a1f0c;
+  --warning-dim:   #5e451a;
+  --warning:       #f5a623;
+  --warning-bright:#ffbb45;
+  /* healthy / success (emerald — distinct from brand lime) */
+  --healthy-bg:    #0e2218;
+  --healthy-dim:   #1d4a36;
+  --healthy:       #34d399;
+  --healthy-bright:#56e3ad;
+  /* info (blue) */
+  --info-bg:       #0e1c2e;
+  --info-dim:      #1d3a5e;
+  --info:          #4d9dff;
+  --info-bright:   #6fb2ff;
+
+  /* --- Persona archetype hues (categorical, quiet) ----------- */
+  --persona-casual:       #4d9dff;  /* blue */
+  --persona-completionist:#a78bfa;  /* violet */
+  --persona-speedrunner:  #f5a623;  /* amber */
+  --persona-competitive:  #f2555a;  /* red */
+  --persona-newuser:      #34d399;  /* emerald */
+
+  /* ============================================================
+     SEMANTIC ALIASES  — author against these, not raw ramps
+     ============================================================ */
+  /* surfaces */
+  --bg-app:        var(--slate-1);
+  --bg-sunken:     var(--slate-0);
+  --surface-panel: var(--slate-2);
+  --surface-card:  var(--slate-3);
+  --surface-raised:var(--slate-4);
+  --surface-inset: var(--slate-0);
+  --surface-hover: var(--slate-4);
+
+  /* borders */
+  --border-subtle: var(--slate-5);
+  --border-hairline: var(--slate-6);
+  --border-strong: var(--slate-7);
+  --border-focus:  var(--lime);
+
+  /* text */
+  --text-max:      var(--slate-12);
+  --text-strong:   var(--slate-11);
+  --text-body:     var(--slate-10);
+  --text-secondary:var(--slate-9);
+  --text-muted:    var(--slate-8);
+  --text-disabled: var(--slate-7);
+  --text-on-accent:var(--lime-on);
+
+  /* brand / interactive */
+  --accent:        var(--lime);
+  --accent-hover:  var(--lime-bright);
+  --accent-dim:    var(--lime-dim);
+  --accent-quiet:  var(--lime-muted);
+
+  /* live state (autonomous agent activity) */
+  --live:          var(--lime);
+  --live-track:    var(--lime-muted);
+
+  /* focus ring */
+  --ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--lime-dim);
+}

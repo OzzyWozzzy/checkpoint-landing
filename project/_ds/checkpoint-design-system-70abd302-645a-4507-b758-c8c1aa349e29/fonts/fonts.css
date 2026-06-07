@@ -1,0 +1,6 @@
+/* Checkpoint — Webfonts
+ * UI / body / display: Geist  (clean technical grotesque)
+ * Data / telemetry / IDs:  Geist Mono
+ * Loaded via Google Fonts CDN. See readme.md "Fonts" for the self-host note.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');

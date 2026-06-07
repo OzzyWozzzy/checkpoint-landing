@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkpoint — AI Playtesting for Every Build</title>
+
+<!-- design system tokens + styles -->
+<link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/fonts/fonts.css">
+<link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/tokens/colors.css">
+<link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/tokens/typography.css">
+<link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/tokens/radius.css">
+<link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/tokens/motion.css">
+<link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/styles.css">
+
+<!-- landing-page layout -->
+<link rel="stylesheet" href="landing.css">
+
+<style>
+  /* a couple of responsive collapses local to this page */
+  @media (max-width: 920px) {
+    .ck-reports-grid { grid-template-columns: 1fr !important; }
+    .ck-cta-grid { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 720px) {
+    .ck-sim-readout { grid-template-columns: 1fr !important; }
+  }
+</style>
+</head>
+<body>
+<template id="__bundler_thumbnail">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="#0b0e13"/>
+    <rect x="34" y="34" width="32" height="32" rx="8" fill="#c8f65d"/>
+    <path d="M45 41v18" stroke="#161b00" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M45 42c2.6-1.6 5.2-1.6 7.8 0 2.6 1.6 5.2 1.6 7.8 0v8.6c-2.6 1.6-5.2 1.6-7.8 0-2.6-1.6-5.2-1.6-7.8 0z" fill="#161b00"/>
+    <circle cx="45" cy="59" r="1.9" fill="#161b00"/>
+  </svg>
+</template>
+
+<div id="root"></div>
+
+<!-- React + Babel (pinned) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- design system bundle (plain JS) + image slot web component -->
+<script src="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/_ds_bundle.js"></script>
+<script src="image-slot.js"></script>
+
+<!-- page sections -->
+<script type="text/babel" src="sections/primitives.jsx"></script>
+<script type="text/babel" src="sections/nav_hero.jsx"></script>
+<script type="text/babel" src="sections/how_reports.jsx"></script>
+<script type="text/babel" src="sections/personas_why.jsx"></script>
+<script type="text/babel" src="sections/cta_footer.jsx"></script>
+</body>
+</html>

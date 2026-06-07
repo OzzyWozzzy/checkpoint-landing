@@ -1,0 +1,22 @@
+/* ============================================================
+   Checkpoint — Elevation.
+   Instrument-panel philosophy: depth comes from BORDERS + background
+   steps, not drop shadows. Shadows are reserved for floating layers
+   (menus, dialogs, toasts) only.
+   ============================================================ */
+:root {
+  /* flat instrument surfaces — no shadow, just a border + bg step */
+  --elev-flat: none;
+
+  /* inset well (composer, code blocks, scrubber track) */
+  --elev-inset: inset 0 1px 0 0 rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.02);
+
+  /* floating layers only */
+  --shadow-popover: 0 8px 24px -8px rgba(0,0,0,0.7), 0 2px 6px -2px rgba(0,0,0,0.5);
+  --shadow-dialog:  0 24px 64px -16px rgba(0,0,0,0.8), 0 8px 24px -8px rgba(0,0,0,0.6);
+  --shadow-toast:   0 12px 32px -10px rgba(0,0,0,0.75);
+
+  /* signal glows — used VERY sparingly (live indicator, focus on accent) */
+  --glow-live: 0 0 0 4px var(--lime-muted);
+  --glow-critical: 0 0 0 4px var(--critical-dim);
+}

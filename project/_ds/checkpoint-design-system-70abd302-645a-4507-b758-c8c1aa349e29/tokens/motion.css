@@ -1,0 +1,48 @@
+/* ============================================================
+   Checkpoint — Motion.
+   Live, not loud. Motion conveys autonomous agent activity:
+   slow pulses, gentle shimmer, results easing in. 150–250ms ease-out.
+   Always gated on prefers-reduced-motion.
+   ============================================================ */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* @kind other */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* @kind other */
+  --dur-fast: 120ms; /* @kind other */
+  --dur-base: 180ms; /* @kind other */
+  --dur-slow: 240ms; /* @kind other */
+  --dur-pulse: 2.4s; /* @kind other */      /* live agent breathing */
+  --dur-shimmer: 1.6s; /* @kind other */    /* streaming/processing */
+}
+
+/* Live agent: a calm breathing pulse — never blinking */
+@keyframes ck-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@keyframes ck-ring-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--lime-muted); }
+  70%  { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+/* Streaming results easing in as runs complete */
+@keyframes ck-stream-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* Processing shimmer for skeletons / progress */
+@keyframes ck-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.ck-live-dot {
+  width: 8px; height: 8px; border-radius: var(--radius-pill);
+  background: var(--live);
+  animation: ck-pulse var(--dur-pulse) var(--ease-in-out) infinite;
+}
+.ck-stream-in { animation: ck-stream-in var(--dur-slow) var(--ease-out) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-live-dot, .ck-stream-in { animation: none !important; }
+  * { scroll-behavior: auto !important; }
+}

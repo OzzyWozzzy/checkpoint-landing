@@ -1,0 +1,71 @@
+/* ============================================================
+   Checkpoint — Typography tokens
+   Body/UI/display: Geist · Telemetry/IDs/metrics: Geist Mono
+   Scale (rem): Display 2.5 / H1 2.0 / H2 1.5 / H3 1.25 /
+                Body .9375 / Small .8125 / Caption-mono .75
+   ============================================================ */
+:root {
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', 'JetBrains Mono', 'IBM Plex Mono', monospace;
+
+  /* weights */
+  --fw-light: 300; /* @kind font */
+  --fw-regular: 400; /* @kind font */
+  --fw-medium: 500; /* @kind font */
+  --fw-semibold: 600; /* @kind font */
+  --fw-bold: 700; /* @kind font */
+  --fw-extrabold: 800; /* @kind font */
+
+  /* sizes */
+  --fs-display: 2.5rem;     /* 40 */
+  --fs-h1: 2rem;            /* 32 */
+  --fs-h2: 1.5rem;          /* 24 */
+  --fs-h3: 1.25rem;         /* 20 */
+  --fs-lg: 1.0625rem;       /* 17 */
+  --fs-body: 0.9375rem;     /* 15 */
+  --fs-small: 0.8125rem;    /* 13 */
+  --fs-caption: 0.75rem;    /* 12 — mono captions, IDs, badges */
+  --fs-micro: 0.6875rem;    /* 11 — overline labels */
+
+  /* line-heights */
+  --lh-display: 1.05; /* @kind font */
+  --lh-heading: 1.2; /* @kind font */
+  --lh-body: 1.5; /* @kind font */
+  --lh-mono: 1.45; /* @kind font */
+
+  /* tracking */
+  --tracking-tight: -0.02em; /* @kind font */
+  --tracking-snug: -0.01em; /* @kind font */
+  --tracking-normal: 0; /* @kind font */
+  --tracking-wide: 0.02em; /* @kind font */
+  --tracking-caps: 0.08em; /* @kind font */
+
+  /* numerics — always tabular so digits don't jitter */
+  --nums-tabular: tabular-nums; /* @kind font */
+}
+
+/* Global base so every consuming surface inherits the right defaults */
+:root {
+  color-scheme: dark;
+}
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--text-body);
+  background: var(--bg-app);
+  font-feature-settings: 'cv01', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Utility-ish primitives consumers can lean on */
+.ck-mono { font-family: var(--font-mono); font-variant-numeric: var(--nums-tabular); }
+.ck-tabular { font-variant-numeric: var(--nums-tabular); }
+.ck-overline {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}

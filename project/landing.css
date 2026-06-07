@@ -1,0 +1,320 @@
+/* ============================================================
+   Checkpoint — landing page layout.
+   Built on the Checkpoint design tokens. Mission-control, dark-first.
+   Depth = border + background step. Lime is rare, reserved, "live".
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg-app);
+  color: var(--text-body);
+  overflow-x: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+::selection { background: var(--lime-muted); color: var(--lime-bright); }
+
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+
+/* ---- Layout primitives ---------------------------------- */
+.ck-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+@media (max-width: 720px) { .ck-container { padding: 0 20px; } }
+
+.ck-section { padding: 104px 0; position: relative; }
+.ck-section--tight { padding: 80px 0; }
+@media (max-width: 720px) { .ck-section { padding: 72px 0; } }
+
+/* sunken bands for vertical rhythm */
+.ck-band-sunken {
+  background: var(--bg-sunken);
+  border-top: 1px solid var(--border-hairline);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+/* ---- Section header block ------------------------------- */
+.ck-overline-accent {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ck-overline-accent::before {
+  content: "";
+  width: 14px; height: 1px;
+  background: var(--accent);
+}
+
+.ck-h-display {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.04;
+  color: var(--text-max);
+  margin: 0;
+  text-wrap: balance;
+}
+.ck-h-section {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  font-size: clamp(1.75rem, 3.2vw, 2.4rem);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.1;
+  color: var(--text-max);
+  margin: 0;
+  text-wrap: balance;
+}
+.ck-lede {
+  font-size: var(--fs-lg);
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0;
+  text-wrap: pretty;
+}
+
+/* ---- Nav ------------------------------------------------- */
+.ck-nav {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in oklab, var(--bg-app) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.ck-nav__row {
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+}
+.ck-nav__links { display: flex; align-items: center; gap: 28px; }
+.ck-nav__link {
+  font-size: var(--fs-small); color: var(--text-secondary);
+  font-weight: var(--fw-medium); letter-spacing: var(--tracking-snug);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.ck-nav__link:hover { color: var(--text-strong); }
+.ck-nav__actions { display: flex; align-items: center; gap: 10px; }
+@media (max-width: 860px) {
+  .ck-nav__links { display: none; }
+}
+
+/* live chip in nav */
+.ck-livechip {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 28px; padding: 0 12px 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  font-family: var(--font-mono); font-size: var(--fs-caption);
+  color: var(--text-secondary); white-space: nowrap;
+}
+
+/* ---- Hero ------------------------------------------------ */
+.ck-hero {
+  position: relative;
+  padding: 96px 0 88px;
+  overflow: hidden;
+}
+.ck-hero__glow {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(680px 420px at 78% -8%, color-mix(in oklab, var(--lime) 12%, transparent), transparent 70%),
+    radial-gradient(900px 500px at 8% 0%, color-mix(in oklab, var(--info) 7%, transparent), transparent 65%);
+}
+.ck-hero__grid {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 1.02fr 0.98fr; gap: 56px; align-items: center;
+}
+@media (max-width: 980px) {
+  .ck-hero__grid { grid-template-columns: 1fr; gap: 44px; }
+}
+.ck-hero__copy { display: flex; flex-direction: column; gap: 24px; align-items: flex-start; }
+.ck-hero h1 { font-size: clamp(2.4rem, 5.2vw, 3.75rem); }
+.ck-hero__ctas { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.ck-hero__trust {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--text-muted);
+}
+.ck-hero__trust .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border-strong); }
+
+/* subtle faint grid texture behind instrument panels */
+.ck-gridlines {
+  background-image:
+    linear-gradient(var(--border-hairline) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-hairline) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.35;
+}
+
+/* ---- Generic grids -------------------------------------- */
+.ck-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.ck-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 860px) { .ck-grid-3 { grid-template-columns: 1fr; } .ck-grid-2 { grid-template-columns: 1fr; } }
+
+.ck-head-block { display: flex; flex-direction: column; gap: 16px; max-width: 720px; }
+.ck-head-center { align-items: center; text-align: center; margin: 0 auto; }
+
+/* ---- Step rail ------------------------------------------ */
+.ck-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+@media (max-width: 860px) { .ck-steps { grid-template-columns: 1fr; } }
+.ck-stepnum {
+  font-family: var(--font-mono); font-size: var(--fs-caption);
+  color: var(--accent); letter-spacing: var(--tracking-wide);
+}
+
+/* ---- Recording frame placeholder ------------------------ */
+.ck-recording {
+  position: relative; border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle); overflow: hidden;
+  background: var(--surface-inset);
+}
+.ck-recording__bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-bottom: 1px solid var(--border-hairline);
+  background: var(--surface-panel);
+  font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--text-muted);
+}
+
+/* ---- Persona / why grids -------------------------------- */
+.ck-personas { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+@media (max-width: 1040px) { .ck-personas { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .ck-personas { grid-template-columns: 1fr; } }
+
+.ck-gauges { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+
+/* ---- Comparison cards ----------------------------------- */
+.ck-compare { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 860px) { .ck-compare { grid-template-columns: 1fr; } }
+.ck-compare__label {
+  font-family: var(--font-mono); font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-caps); text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ---- Roadmap timeline ----------------------------------- */
+.ck-roadmap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; }
+@media (max-width: 860px) { .ck-roadmap { grid-template-columns: 1fr; gap: 20px; } }
+.ck-roadmap__item { padding: 0 22px; position: relative; }
+.ck-roadmap__item:first-child { padding-left: 0; }
+.ck-roadmap__node {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.ck-roadmap__line { flex: 1; height: 1px; background: var(--border-subtle); }
+.ck-roadmap__pin { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+/* ---- CTA band ------------------------------------------- */
+.ck-cta {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(620px 320px at 88% 120%, color-mix(in oklab, var(--lime) 14%, transparent), transparent 70%),
+    var(--surface-panel);
+  padding: 64px 56px;
+}
+@media (max-width: 720px) { .ck-cta { padding: 44px 28px; } }
+.ck-cta__form { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---- Footer --------------------------------------------- */
+.ck-footer { border-top: 1px solid var(--border-hairline); background: var(--bg-sunken); }
+.ck-footer__row {
+  display: flex; justify-content: space-between; gap: 32px; flex-wrap: wrap;
+  padding: 48px 0 40px;
+}
+.ck-footer__cols { display: flex; gap: 56px; flex-wrap: wrap; }
+.ck-footer__col { display: flex; flex-direction: column; gap: 10px; }
+.ck-footer__col h5 {
+  margin: 0 0 4px; font-family: var(--font-mono); font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);
+  font-weight: var(--fw-medium);
+}
+.ck-footer__col a { font-size: var(--fs-small); color: var(--text-secondary); transition: color var(--dur-fast); }
+.ck-footer__col a:hover { color: var(--text-strong); }
+
+/* ---- Entrance animation -------------------------------- */
+/* Base state is fully visible (transitions freeze when backgrounded, so the
+   end-state must never depend on one running). is-in adds a one-shot lift. */
+.ck-reveal { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .ck-reveal.is-in { animation: ck-stream-in var(--dur-slow) var(--ease-out) both; }
+}
+
+/* streaming shimmer bar reuse */
+.ck-shimmerbar { height: 6px; border-radius: var(--radius-pill); background: var(--live-track); overflow: hidden; }
+.ck-shimmerbar > span {
+  display: block; height: 100%; width: 42%; border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--lime), transparent);
+  background-size: 200% 100%; animation: ck-shimmer var(--dur-shimmer) linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .ck-shimmerbar > span { animation: none; } }
+
+/* ring pulse on the running run node */
+.ck-ringpulse { animation: ck-ring-pulse var(--dur-pulse) var(--ease-in-out) infinite; }
+@media (prefers-reduced-motion: reduce) { .ck-ringpulse { animation: none; } }
+
+.ck-divider { height: 1px; background: var(--border-hairline); width: 100%; }
+
+/* ============================================================
+   BEIGE THEME OVERRIDE
+   Remaps the dark-first semantic aliases to a warm, light palette.
+   DS components read these var(--*) tokens, so they adapt in place.
+   Signal-lime stays the brand accent.
+   ============================================================ */
+:root {
+  /* surfaces — warm cream ramp */
+  --bg-app:         #ece3d2;
+  --bg-sunken:      #e3d8c3;
+  --surface-panel:  #f2ecdf;
+  --surface-card:   #f8f2e8;
+  --surface-raised: #fcf7ef;
+  --surface-inset:  #e6dcc9;
+  --surface-hover:  #efe7d7;
+
+  /* borders */
+  --border-subtle:   #d4c6ab;
+  --border-hairline: #ddd0b8;
+  --border-strong:   #c2b193;
+
+  /* text — warm near-black ramp */
+  --text-max:       #20190d;
+  --text-strong:    #2f2718;
+  --text-body:      #463c29;
+  --text-secondary: #6a5f49;
+  --text-muted:     #8f8369;
+  --text-disabled:  #b3a585;
+
+  /* severity chip backgrounds softened to light tints */
+  --critical-bg: #f6e0df;
+  --warning-bg:  #f8ead0;
+  --healthy-bg:  #dcf1e4;
+  --info-bg:     #dce8f6;
+
+  /* live shimmer track — soft plum tint so the brand sweep reads */
+  --live-track:  #ead7df;
+
+  /* ---- Brand ramp remap: plum/wine replaces the lime ----------
+     Redefining the raw lime tokens cascades to every semantic alias
+     (--accent, --live, --border-focus, --text-on-accent, …) since
+     those resolve var(--lime*) lazily. A jewel tone that complements
+     warm beige and stays clear of the red/amber/emerald/blue spine. */
+  --lime-muted:  #ead7df;   /* soft plum tint — quiet fills / tracks */
+  --lime-dim:    #c07d96;   /* dim plum — focus ring outer, disabled */
+  --lime:        #9b3a61;   /* PRIMARY brand */
+  --lime-bright: #b34973;   /* hover / active */
+  --lime-on:     #fbf4ef;   /* cream text/icon on plum fills */
+
+  /* focus ring tuned for light bg */
+  --ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--accent-dim);
+}
+
+/* selection re-tuned for the light theme + plum brand */
+::selection { background: var(--accent); color: var(--lime-on); }

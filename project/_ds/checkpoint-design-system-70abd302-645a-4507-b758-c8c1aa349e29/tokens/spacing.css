@@ -1,0 +1,29 @@
+/* ============================================================
+   Checkpoint — Spacing scale.  Base unit 4px.
+   2 · 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64
+   ============================================================ */
+:root {
+  --space-0: 0;
+  --space-px: 1px;
+  --space-1: 0.125rem;  /* 2  */
+  --space-2: 0.25rem;   /* 4  */
+  --space-3: 0.5rem;    /* 8  */
+  --space-4: 0.75rem;   /* 12 */
+  --space-5: 1rem;      /* 16 */
+  --space-6: 1.5rem;    /* 24 */
+  --space-7: 2rem;      /* 32 */
+  --space-8: 3rem;      /* 48 */
+  --space-9: 4rem;      /* 64 */
+
+  /* density modes — power users reviewing long issue lists */
+  --row-height-comfortable: 44px;
+  --row-height-compact: 32px;
+  --control-height: 36px;
+  --control-height-sm: 28px;
+  --control-height-lg: 44px;
+
+  /* app shell rails */
+  --nav-width: 232px;
+  --nav-width-collapsed: 60px;
+  --inspector-width: 380px;
+}
