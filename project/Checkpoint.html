@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Checkpoint — AI Playtesting for Every Build</title>
 
-<!-- design system tokens + styles -->
+<!-- Design system: fonts + tokens + component styles -->
 <link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/fonts/fonts.css">
 <link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/tokens/colors.css">
 <link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/tokens/typography.css">
@@ -15,47 +15,1055 @@
 <link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/tokens/motion.css">
 <link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/styles.css">
 
-<!-- landing-page layout -->
-<link rel="stylesheet" href="landing.css">
-
 <style>
-  /* a couple of responsive collapses local to this page */
-  @media (max-width: 920px) {
-    .ck-reports-grid { grid-template-columns: 1fr !important; }
-    .ck-cta-grid { grid-template-columns: 1fr !important; }
-  }
-  @media (max-width: 720px) {
-    .ck-sim-readout { grid-template-columns: 1fr !important; }
-  }
+/* ============================================================
+   Checkpoint landing page — layout & theme
+   Warm beige surfaces, plum brand accent, severity as the spine.
+   ============================================================ */
+
+/* ---- Reset ------------------------------------------------ */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+html, body { margin: 0; padding: 0; }
+body { background: var(--bg-app); color: var(--text-body); overflow-x: hidden; }
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* ---- Layout primitives ----------------------------------- */
+.ck-container {
+  width: 100%; max-width: 1200px;
+  margin: 0 auto; padding: 0 32px;
+}
+@media (max-width: 720px) { .ck-container { padding: 0 20px; } }
+
+.ck-section { padding: 104px 0; position: relative; }
+.ck-section--tight { padding: 80px 0; }
+@media (max-width: 720px) { .ck-section { padding: 72px 0; } }
+
+.ck-band-sunken {
+  background: var(--bg-sunken);
+  border-top: 1px solid var(--border-hairline);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+/* ---- Section header -------------------------------------- */
+.ck-overline-accent {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--accent);
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.ck-overline-accent::before {
+  content: ""; width: 14px; height: 1px; background: var(--accent);
+}
+
+.ck-h-display {
+  font-family: var(--font-sans); font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-tight); line-height: 1.04;
+  color: var(--text-max); margin: 0; text-wrap: balance;
+}
+.ck-h-section {
+  font-family: var(--font-sans); font-weight: var(--fw-semibold);
+  font-size: clamp(1.75rem, 3.2vw, 2.4rem);
+  letter-spacing: var(--tracking-tight); line-height: 1.1;
+  color: var(--text-max); margin: 0; text-wrap: balance;
+}
+.ck-lede {
+  font-size: var(--fs-lg); line-height: 1.55;
+  color: var(--text-secondary); margin: 0; text-wrap: pretty;
+}
+
+/* ---- Nav ------------------------------------------------- */
+.ck-nav {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in oklab, var(--bg-app) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.ck-nav__row {
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+}
+.ck-nav__links { display: flex; align-items: center; gap: 28px; }
+.ck-nav__link {
+  font-size: var(--fs-small); color: var(--text-secondary);
+  font-weight: var(--fw-medium); letter-spacing: var(--tracking-snug);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.ck-nav__link:hover { color: var(--text-strong); }
+.ck-nav__actions { display: flex; align-items: center; gap: 10px; }
+@media (max-width: 860px) { .ck-nav__links { display: none; } }
+
+.ck-livechip {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 28px; padding: 0 12px 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-card); border: 1px solid var(--border-subtle);
+  font-family: var(--font-mono); font-size: var(--fs-caption);
+  color: var(--text-secondary); white-space: nowrap;
+}
+
+/* ---- Hero ------------------------------------------------ */
+.ck-hero { position: relative; padding: 96px 0 88px; overflow: hidden; }
+.ck-hero__glow {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(680px 420px at 78% -8%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 70%),
+    radial-gradient(900px 500px at 8% 0%, color-mix(in oklab, var(--info) 7%, transparent), transparent 65%);
+}
+.ck-hero__grid {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 1.02fr 0.98fr; gap: 56px; align-items: center;
+}
+@media (max-width: 980px) { .ck-hero__grid { grid-template-columns: 1fr; gap: 44px; } }
+.ck-hero__copy { display: flex; flex-direction: column; gap: 24px; align-items: flex-start; }
+.ck-hero h1 { font-size: clamp(2.4rem, 5.2vw, 3.75rem); }
+.ck-hero__ctas { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.ck-hero__trust {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--text-muted);
+}
+.ck-hero__trust .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border-strong); }
+
+/* ---- Generic grids --------------------------------------- */
+.ck-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.ck-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 860px) {
+  .ck-grid-3 { grid-template-columns: 1fr; }
+  .ck-grid-2 { grid-template-columns: 1fr; }
+}
+
+.ck-head-block { display: flex; flex-direction: column; gap: 16px; max-width: 720px; }
+.ck-head-center { align-items: center; text-align: center; margin: 0 auto; }
+
+/* ---- Step rail ------------------------------------------ */
+.ck-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+@media (max-width: 860px) { .ck-steps { grid-template-columns: 1fr; } }
+.ck-stepnum {
+  font-family: var(--font-mono); font-size: var(--fs-caption);
+  color: var(--accent); letter-spacing: var(--tracking-wide);
+}
+
+/* ---- Recording frame ------------------------------------ */
+.ck-recording {
+  position: relative; border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle); overflow: hidden;
+  background: var(--surface-inset);
+}
+.ck-recording__bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-bottom: 1px solid var(--border-hairline);
+  background: var(--surface-panel);
+  font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--text-muted);
+}
+
+/* ---- Comparison cards ----------------------------------- */
+.ck-compare { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 860px) { .ck-compare { grid-template-columns: 1fr; } }
+.ck-compare__label {
+  font-family: var(--font-mono); font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);
+}
+
+/* ---- Roadmap timeline ----------------------------------- */
+.ck-roadmap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; }
+@media (max-width: 860px) { .ck-roadmap { grid-template-columns: 1fr; gap: 20px; } }
+.ck-roadmap__item { padding: 0 22px; position: relative; }
+.ck-roadmap__item:first-child { padding-left: 0; }
+.ck-roadmap__node { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.ck-roadmap__line { flex: 1; height: 1px; background: var(--border-subtle); }
+.ck-roadmap__pin { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+/* ---- CTA band ------------------------------------------- */
+.ck-cta {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-xl);
+  background:
+    radial-gradient(620px 320px at 88% 120%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 70%),
+    var(--surface-panel);
+  padding: 64px 56px;
+}
+@media (max-width: 720px) { .ck-cta { padding: 44px 28px; } }
+.ck-cta__form { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---- Footer --------------------------------------------- */
+.ck-footer { border-top: 1px solid var(--border-hairline); background: var(--bg-sunken); }
+.ck-footer__row {
+  display: flex; justify-content: space-between; gap: 32px; flex-wrap: wrap;
+  padding: 48px 0 40px;
+}
+.ck-footer__cols { display: flex; gap: 56px; flex-wrap: wrap; }
+.ck-footer__col { display: flex; flex-direction: column; gap: 10px; }
+.ck-footer__col h5 {
+  margin: 0 0 4px; font-family: var(--font-mono); font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);
+  font-weight: var(--fw-medium);
+}
+.ck-footer__col a { font-size: var(--fs-small); color: var(--text-secondary); transition: color var(--dur-fast); }
+.ck-footer__col a:hover { color: var(--text-strong); }
+
+/* ---- Entrance animation --------------------------------- */
+/* Content is always visible — transitions freeze when backgrounded, so the
+   end-state must never depend on one running. is-in adds a one-shot lift. */
+.ck-reveal { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .ck-reveal.is-in { animation: ck-stream-in var(--dur-slow) var(--ease-out) both; }
+}
+
+/* ---- Shimmer progress bar ------------------------------- */
+.ck-shimmerbar { height: 6px; border-radius: var(--radius-pill); background: var(--live-track); overflow: hidden; }
+.ck-shimmerbar > span {
+  display: block; height: 100%; width: 42%; border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 200% 100%; animation: ck-shimmer var(--dur-shimmer) linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .ck-shimmerbar > span { animation: none; } }
+
+.ck-divider { height: 1px; background: var(--border-hairline); width: 100%; }
+
+/* ---- Responsive overrides for inline grids -------------- */
+@media (max-width: 920px) {
+  .ck-reports-grid { grid-template-columns: 1fr !important; }
+  .ck-cta-grid     { grid-template-columns: 1fr !important; }
+}
+
+/* ============================================================
+   BEIGE + PLUM THEME
+   Remaps the dark-first design system tokens to a warm light
+   palette. DS components read these var(--*) aliases, so they
+   adapt automatically. Plum/wine replaces the lime brand accent.
+   ============================================================ */
+:root {
+  color-scheme: light;
+
+  /* surfaces — warm cream ramp */
+  --bg-app:         #ece3d2;
+  --bg-sunken:      #e3d8c3;
+  --surface-panel:  #f2ecdf;
+  --surface-card:   #f8f2e8;
+  --surface-raised: #fcf7ef;
+  --surface-inset:  #e6dcc9;
+  --surface-hover:  #efe7d7;
+
+  /* borders */
+  --border-subtle:   #d4c6ab;
+  --border-hairline: #ddd0b8;
+  --border-strong:   #c2b193;
+
+  /* text — warm near-black ramp */
+  --text-max:       #20190d;
+  --text-strong:    #2f2718;
+  --text-body:      #463c29;
+  --text-secondary: #6a5f49;
+  --text-muted:     #8f8369;
+  --text-disabled:  #b3a585;
+
+  /* severity chip backgrounds softened to light tints */
+  --critical-bg: #f6e0df;
+  --warning-bg:  #f8ead0;
+  --healthy-bg:  #dcf1e4;
+  --info-bg:     #dce8f6;
+
+  /* live shimmer track */
+  --live-track: #ead7df;
+
+  /* brand ramp: plum/wine — complements warm beige, distinct from all severity hues */
+  --lime-muted:  #ead7df;
+  --lime-dim:    #c07d96;
+  --lime:        #9b3a61;
+  --lime-bright: #b34973;
+  --lime-on:     #fbf4ef;
+
+  /* focus ring */
+  --ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--accent-dim);
+}
+
+/* selection highlight */
+::selection { background: var(--accent); color: var(--lime-on); }
 </style>
 </head>
 <body>
-<template id="__bundler_thumbnail">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-    <rect width="100" height="100" fill="#0b0e13"/>
-    <rect x="34" y="34" width="32" height="32" rx="8" fill="#c8f65d"/>
-    <path d="M45 41v18" stroke="#161b00" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M45 42c2.6-1.6 5.2-1.6 7.8 0 2.6 1.6 5.2 1.6 7.8 0v8.6c-2.6 1.6-5.2 1.6-7.8 0-2.6-1.6-5.2-1.6-7.8 0z" fill="#161b00"/>
-    <circle cx="45" cy="59" r="1.9" fill="#161b00"/>
-  </svg>
-</template>
-
 <div id="root"></div>
 
-<!-- React + Babel (pinned) -->
+<!-- React + Babel (pinned versions) -->
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
-<!-- design system bundle (plain JS) + image slot web component -->
+<!-- Design system component bundle + image-slot web component -->
 <script src="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/_ds_bundle.js"></script>
 <script src="image-slot.js"></script>
 
-<!-- page sections -->
-<script type="text/babel" src="sections/primitives.jsx"></script>
-<script type="text/babel" src="sections/nav_hero.jsx"></script>
-<script type="text/babel" src="sections/how_reports.jsx"></script>
-<script type="text/babel" src="sections/personas_why.jsx"></script>
-<script type="text/babel" src="sections/cta_footer.jsx"></script>
+<script type="text/babel">
+/* ============================================================
+   Checkpoint — landing page components
+   Single compiled bundle (no separate JSX file fetches).
+   ============================================================ */
+
+const CK = window.CheckpointDesignSystem_70abd3;
+const { useRef, useEffect, useState } = React;
+
+/* ------------------------------------------------------------------ */
+/* PRIMITIVES                                                           */
+/* ------------------------------------------------------------------ */
+
+function Container({ children, style }) {
+  return <div className="ck-container" style={style}>{children}</div>;
+}
+
+function Overline({ children }) {
+  return <span className="ck-overline-accent">{children}</span>;
+}
+
+/* Reveal — content is always visible (end-state is the base state).
+   IntersectionObserver fires a one-shot entrance animation when the
+   element scrolls in, but a missed trigger never hides anything. */
+function Reveal({ children, delay = 0, as = 'div', className = '', style }) {
+  const ref = useRef(null);
+  const [animate, setAnimate] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { setAnimate(true); io.disconnect(); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const Tag = as;
+  return (
+    <Tag ref={ref}
+      className={`ck-reveal ${animate ? 'is-in' : ''} ${className}`}
+      style={{ animationDelay: `${delay}ms`, ...style }}>
+      {children}
+    </Tag>
+  );
+}
+
+function SectionHead({ overline, title, lede, center = false, maxWidth }) {
+  return (
+    <div className={`ck-head-block ${center ? 'ck-head-center' : ''}`}
+      style={maxWidth ? { maxWidth } : undefined}>
+      {overline && <Overline>{overline}</Overline>}
+      <h2 className="ck-h-section">{title}</h2>
+      {lede && <p className="ck-lede">{lede}</p>}
+    </div>
+  );
+}
+
+/* Stroke icons — drawn inline so no icon font dependency */
+function Icon({ name, size = 18, stroke = 1.75, style }) {
+  const paths = {
+    upload:   <><path d="M12 16V4M12 4l-4 4M12 4l4 4" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16" strokeLinecap="round"/></>,
+    target:   <><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6" fill="currentColor" stroke="none"/></>,
+    play:     <><path d="M7 5.5l11 6.5-11 6.5z" strokeLinejoin="round"/></>,
+    arrow:    <><path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/></>,
+    bolt:     <><path d="M13 3L5 13h6l-1 8 8-10h-6z" strokeLinejoin="round"/></>,
+    repeat:   <><path d="M4 9a6 6 0 0 1 10-2l2 2M20 15a6 6 0 0 1-10 2l-2-2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 5v4h-4M8 19v-4h4" strokeLinecap="round" strokeLinejoin="round"/></>,
+    clock:    <><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2" strokeLinecap="round" strokeLinejoin="round"/></>,
+    hand:     <><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V12m0-1a1.5 1.5 0 0 1 3 0v4a6 6 0 0 1-6 6h-1.2a5 5 0 0 1-3.6-1.6L4 17l1.2-1.2a1.6 1.6 0 0 1 2.2-.1L9 17" strokeLinecap="round" strokeLinejoin="round"/></>,
+    layers:   <><path d="M12 3l8.5 4.5L12 12 3.5 7.5 12 3z" strokeLinejoin="round"/><path d="M3.5 12L12 16.5 20.5 12M3.5 16.5L12 21l8.5-4.5" strokeLinejoin="round"/></>,
+    check:    <><path d="M5 12.5l4.2 4.2L19 7" strokeLinecap="round" strokeLinejoin="round"/></>,
+    cpu:      <><rect x="6.5" y="6.5" width="11" height="11" rx="2"/><path d="M10 3v2.5M14 3v2.5M10 18.5V21M14 18.5V21M3 10h2.5M3 14h2.5M18.5 10H21M18.5 14H21" strokeLinecap="round"/></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={stroke} style={style} aria-hidden="true">
+      {paths[name] || null}
+    </svg>
+  );
+}
+
+function IconTile({ name, accent = 'var(--accent)', size = 20 }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      width: 40, height: 40, borderRadius: 'var(--radius-md)',
+      background: 'var(--surface-inset)', border: '1px solid var(--border-subtle)',
+      color: accent, flex: 'none',
+    }}>
+      <Icon name={name} size={size} />
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* NAV + HERO                                                           */
+/* ------------------------------------------------------------------ */
+
+function Logo({ height = 28 }) {
+  return (
+    <a href="#top" aria-label="Checkpoint home"
+      style={{ display: 'inline-flex', alignItems: 'center' }}>
+      <svg width={height * 5.25} height={height} viewBox="0 0 168 32"
+        fill="none" role="img" aria-label="Checkpoint">
+        <rect width="32" height="32" rx="8" fill="#9b3a61"/>
+        <path d="M11 7.5V24.5" stroke="#fbf4ef" strokeWidth="2.1" strokeLinecap="round"/>
+        <path d="M11 8.2C13.4 6.7 15.8 6.7 18.2 8.2C20.6 9.7 23 9.7 25.4 8.2V16.4C23 17.9 20.6 17.9 18.2 16.4C15.8 14.9 13.4 14.9 11 16.4V8.2Z" fill="#fbf4ef"/>
+        <circle cx="11" cy="24.5" r="1.8" fill="#fbf4ef"/>
+        <text x="44" y="22" fontFamily="Geist, system-ui, sans-serif" fontSize="20"
+          fontWeight="700" letterSpacing="-0.02em" fill="#20190d">Checkpoint</text>
+      </svg>
+    </a>
+  );
+}
+
+function Nav() {
+  const { Button } = CK;
+  return (
+    <nav className="ck-nav">
+      <Container>
+        <div className="ck-nav__row">
+          <Logo height={26} />
+          <div className="ck-nav__links">
+            <a className="ck-nav__link" href="#how">How it works</a>
+            <a className="ck-nav__link" href="#reports">Reports</a>
+            <a className="ck-nav__link" href="#why">Why Checkpoint</a>
+          </div>
+          <div className="ck-nav__actions">
+            <span className="ck-livechip">
+              <span className="ck-live-dot"></span>3 agents running
+            </span>
+            <Button variant="ghost" size="sm">Sign in</Button>
+            <Button variant="primary" size="sm">Book a demo</Button>
+          </div>
+        </div>
+      </Container>
+    </nav>
+  );
+}
+
+/* Live run instrument panel — proof-of-product in the hero */
+function LiveRunPanel() {
+  const { Card, SeverityBadge, Metric, Tag } = CK;
+  const findings = [
+    { sev: 'critical', text: 'Null deref on tutorial skip',            meta: 'agent-07 · 00:14:22' },
+    { sev: 'warning',  text: 'Boss DPS check unwinnable for casual loadout', meta: 'agent-03 · 00:21:09' },
+    { sev: 'info',     text: 'Shop CTA below fold at 1280×720',        meta: 'agent-11 · 00:08:51' },
+  ];
+  return (
+    <Card padded={false} style={{ width: '100%' }}>
+      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* metrics row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+          <Metric label="Agents live" value="48" />
+          <Metric label="Objectives" value="12" />
+          <Metric label="Findings" value="37" level="warning" />
+        </div>
+
+        {/* streaming progress */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between',
+            fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
+            <span>Playtesting tutorial → first boss</span>
+            <span>64%</span>
+          </div>
+          <div className="ck-shimmerbar"><span></span></div>
+        </div>
+
+        {/* findings stream */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {findings.map((f, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '10px 12px', borderRadius: 'var(--radius-md)',
+              background: 'var(--surface-inset)', border: '1px solid var(--border-hairline)',
+            }}>
+              <SeverityBadge level={f.sev} />
+              <span style={{ flex: 1, fontSize: 'var(--fs-small)', color: 'var(--text-body)',
+                minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {f.text}
+              </span>
+              <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)', flex: 'none' }}>
+                {f.meta}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* objective tags footer */}
+      <div style={{ padding: '11px 16px', borderTop: '1px solid var(--border-hairline)',
+        background: 'var(--surface-panel)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Tag>tutorial</Tag>
+        <Tag>shop-flow</Tag>
+        <Tag>aggressive · 30m</Tag>
+        <Tag>1280×720</Tag>
+      </div>
+    </Card>
+  );
+}
+
+function Hero() {
+  const { Button } = CK;
+  return (
+    <header className="ck-hero" id="top">
+      <div className="ck-hero__glow"></div>
+      <Container>
+        <div className="ck-hero__grid">
+          <div className="ck-hero__copy">
+            <Overline>AI playtesting platform</Overline>
+            <h1 className="ck-h-display">
+              An always-on AI playtesting layer for every build.
+            </h1>
+            <p className="ck-lede" style={{ maxWidth: 520 }}>
+              Checkpoint runs multimodal agents that play your game like real players — watching the
+              screen, driving keyboard and mouse, and returning structured reports with recordings,
+              repro steps, crashes, and balance data. On every build. At scale.
+            </p>
+            <div className="ck-hero__ctas">
+              <Button variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} />}>
+                Book a demo
+              </Button>
+              <Button variant="secondary" size="lg" iconLeft={<Icon name="play" size={15} />}>
+                See a sample report
+              </Button>
+            </div>
+            <div className="ck-hero__trust">
+              <span>No test scripts</span>
+              <span className="dot"></span>
+              <span>Runs on every build</span>
+              <span className="dot"></span>
+              <span>Built for Unity</span>
+            </div>
+          </div>
+          <Reveal delay={80}><LiveRunPanel /></Reveal>
+        </div>
+      </Container>
+    </header>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* PROBLEM BAND                                                         */
+/* ------------------------------------------------------------------ */
+
+function Problem() {
+  const { Card } = CK;
+  const items = [
+    {
+      icon: 'repeat',
+      title: 'Manual & repetitive',
+      body: 'Human testers replay tutorials, levels, combat, menus, and progression by hand after every new build.',
+    },
+    {
+      icon: 'clock',
+      title: 'Discovered too late',
+      body: 'Retention, pacing, and balance problems usually surface after launch — through churn, refunds, and reviews.',
+    },
+    {
+      icon: 'layers',
+      title: "Doesn't scale",
+      body: 'Coverage is capped by tester hours, so most builds ship only partially playtested under deadline pressure.',
+    },
+  ];
+  return (
+    <section className="ck-section ck-band-sunken">
+      <Container>
+        <Reveal>
+          <SectionHead
+            overline="The QA bottleneck"
+            title="Game QA is the slowest, most expensive loop in development."
+            lede="Studios depend on human playtesters to catch bugs, balance issues, and UX friction — but that work is repetitive, expensive, and never finished. The hardest problems hide in engagement and retention, and those rarely show up until real players churn."
+          />
+        </Reveal>
+        <div className="ck-grid-3" style={{ marginTop: 48 }}>
+          {items.map((it, i) => (
+            <Reveal key={it.title} delay={i * 90}>
+              <Card style={{ height: '100%' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <IconTile name={it.icon} accent="var(--warning)" />
+                  <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-semibold)',
+                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)' }}>
+                    {it.title}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--fs-body)', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
+                    {it.body}
+                  </p>
+                </div>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* HOW IT WORKS                                                         */
+/* ------------------------------------------------------------------ */
+
+function ObjectiveComposer() {
+  return (
+    <div style={{
+      background: 'var(--surface-inset)', border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-md)', overflow: 'hidden',
+    }}>
+      <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-hairline)',
+        background: 'var(--surface-panel)' }}>
+        <span className="ck-overline">Objectives · plain English</span>
+      </div>
+      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
+        {[
+          'Complete the tutorial without a guide',
+          'Test the shop and checkout flow',
+          'Play aggressively for 30 minutes',
+        ].map((o, i) => (
+          <div key={i} style={{
+            display: 'grid', gridTemplateColumns: '20px 1fr', gap: 8, alignItems: 'baseline',
+            fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-small)',
+            color: 'var(--text-body)', lineHeight: 1.45,
+          }}>
+            <span style={{ color: 'var(--accent)' }}>{String(i + 1).padStart(2, '0')}</span>
+            <span>{o}</span>
+          </div>
+        ))}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '20px 1fr', gap: 8, alignItems: 'center',
+          fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-small)', color: 'var(--text-muted)',
+        }}>
+          <span style={{ color: 'var(--text-disabled)' }}>04</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            Add an objective
+            <span style={{ width: 7, height: 15, background: 'var(--accent)',
+              display: 'inline-block', borderRadius: 1 }} className="ck-live-dot"></span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HowItWorks() {
+  const { Card } = CK;
+  const steps = [
+    {
+      n: '01', icon: 'upload',
+      title: 'Upload a build',
+      body: 'Drop in your Unity build. No instrumentation, no test harness, no scripted cases to maintain.',
+    },
+    {
+      n: '02', icon: 'target',
+      title: 'Define objectives in plain English',
+      body: 'Describe what to test the way you'd brief a tester. Checkpoint turns each line into an agent goal.',
+    },
+    {
+      n: '03', icon: 'cpu',
+      title: 'Run autonomous playtests at scale',
+      body: 'Agents spin up by the hundreds, play to your objectives, and stream structured findings as they go.',
+    },
+  ];
+  return (
+    <section className="ck-section" id="how">
+      <Container>
+        <Reveal>
+          <SectionHead
+            overline="How it works"
+            title="From build to findings in three steps."
+            lede="No manual test cases. Checkpoint observes the screen and drives real keyboard and mouse input — so it tests the game your players actually see."
+          />
+        </Reveal>
+        <div className="ck-steps" style={{ marginTop: 48 }}>
+          {steps.map((s, i) => (
+            <Reveal key={s.n} delay={i * 90}>
+              <Card style={{ height: '100%' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <IconTile name={s.icon} />
+                    <span className="ck-stepnum">{s.n}</span>
+                  </div>
+                  <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-semibold)',
+                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)' }}>
+                    {s.title}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--fs-body)', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
+                    {s.body}
+                  </p>
+                  {i === 0 && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '10px 12px', borderRadius: 'var(--radius-md)',
+                      background: 'var(--surface-inset)', border: '1px dashed var(--border-strong)',
+                      fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)',
+                      color: 'var(--text-muted)', marginTop: 'auto',
+                    }}>
+                      <Icon name="upload" size={15} style={{ color: 'var(--accent)' }} />
+                      build_0.9.4-rc2.zip · 248 MB
+                    </div>
+                  )}
+                  {i === 1 && <ObjectiveComposer />}
+                  {i === 2 && (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto' }}>
+                      {[['agent-01', 'running'], ['agent-02', 'running'], ['agent-03', 'passed'], ['agent-04', 'failed']].map(([id, st]) => (
+                        <CK.StatusPill key={id} status={st}>{id}</CK.StatusPill>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* REPORTS                                                              */
+/* ------------------------------------------------------------------ */
+
+function Reports() {
+  const { DataTable, SeverityBadge, ReproBlock, Button } = CK;
+  const columns = [
+    { key: 'sev',     header: 'Severity', width: 116, render: (r) => <SeverityBadge level={r.sev} /> },
+    { key: 'finding', header: 'Finding' },
+    { key: 'type',    header: 'Type',  width: 120, mono: true, render: (r) => <span style={{ color: 'var(--text-secondary)' }}>{r.type}</span> },
+    { key: 'build',   header: 'Build', width: 132, mono: true },
+    { key: 'agent',   header: 'Agent', width: 96,  mono: true, align: 'right' },
+  ];
+  const rows = [
+    { sev: 'critical', finding: 'Crash on tutorial skip → main menu',      type: 'crash',   build: '0.9.4-rc2', agent: '07' },
+    { sev: 'warning',  finding: 'First boss unwinnable for casual loadout', type: 'balance', build: '0.9.4-rc2', agent: '03' },
+    { sev: 'warning',  finding: 'Frame time spikes >120ms in market hub',   type: 'perf',    build: '0.9.4-rc2', agent: '22' },
+    { sev: 'info',     finding: 'Shop CTA below the fold at 1280×720',      type: 'ux',      build: '0.9.4-rc2', agent: '11' },
+    { sev: 'healthy',  finding: 'Checkout flow completes in <4 actions',    type: 'ux',      build: '0.9.4-rc2', agent: '05' },
+  ];
+  const accent = { critical: 'var(--critical)', warning: 'var(--warning)', info: 'var(--info)', healthy: 'var(--healthy)' };
+  return (
+    <section className="ck-section ck-band-sunken" id="reports">
+      <Container>
+        <Reveal>
+          <SectionHead
+            overline="What you get back"
+            title="Structured reports, not just a pass/fail."
+            lede="Every run returns triage-ready findings: severity, type, the build it hit, gameplay recordings, and exact reproduction steps your engineers can act on immediately."
+          />
+        </Reveal>
+
+        <div style={{ marginTop: 48, display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: 24, alignItems: 'start' }}
+          className="ck-reports-grid">
+
+          {/* findings table */}
+          <Reveal>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <SeverityBadge level="critical" count={1} />
+                  <SeverityBadge level="warning"  count={2} />
+                  <SeverityBadge level="info"     count={1} />
+                  <SeverityBadge level="healthy"  count={1} />
+                </div>
+                <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
+                  37 findings · build_0.9.4-rc2
+                </span>
+              </div>
+              <DataTable columns={columns} rows={rows} density="comfortable"
+                getRowAccent={(r) => accent[r.sev]} />
+            </div>
+          </Reveal>
+
+          {/* recording + repro */}
+          <Reveal delay={90}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div className="ck-recording">
+                <div className="ck-recording__bar">
+                  <Icon name="play" size={13} style={{ color: 'var(--critical)' }} />
+                  <span>gameplay_agent-07.mp4</span>
+                  <span style={{ marginLeft: 'auto' }}>00:14:22 / 00:31:40</span>
+                </div>
+                <image-slot id="report-recording"
+                  style={{ display: 'block', width: '100%', height: '180px' }}
+                  shape="rect"
+                  placeholder="Drop a gameplay frame">
+                </image-slot>
+              </div>
+              <ReproBlock
+                meta="agent-07"
+                steps={[
+                  'Launch build_0.9.4-rc2, new save',
+                  'Start tutorial, reach prompt 3/9',
+                  { text: 'Press Esc → "Skip tutorial"', note: '// during fade' },
+                  { text: 'Crash: NullReferenceException',  note: '// TutorialManager.cs:212' },
+                ]}
+              />
+              <Button variant="secondary" iconRight={<Icon name="arrow" size={15} />} fullWidth>
+                Open full report
+              </Button>
+            </div>
+          </Reveal>
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* WHY CHECKPOINT                                                       */
+/* ------------------------------------------------------------------ */
+
+function Why() {
+  const { Card } = CK;
+  const cols = [
+    {
+      label: 'vs. scripted automation', accent: 'var(--info)', icon: 'cpu',
+      title: 'No test cases to write or maintain.',
+      points: [
+        'Agents observe and react instead of replaying brittle scripts',
+        'New build, same plain-English objectives — no rework',
+        'Catches the unscripted paths real players actually take',
+      ],
+    },
+    {
+      label: 'vs. human beta testing', accent: 'var(--accent)', icon: 'bolt',
+      title: 'Continuous, and at massive scale.',
+      points: [
+        'Runs on every build, day or night, in parallel',
+        'Hundreds of agents across personas in a single pass',
+        'Findings stream back in minutes, not testing cycles',
+      ],
+    },
+    {
+      label: 'our stance', accent: 'var(--healthy)', icon: 'hand',
+      title: 'Augments your QA team — doesn\'t replace it.',
+      points: [
+        'An always-on layer that surfaces issues earlier',
+        'Frees human testers for judgment and feel',
+        'More iterations, more coverage, less guesswork',
+      ],
+    },
+  ];
+  return (
+    <section className="ck-section ck-band-sunken" id="why">
+      <Container>
+        <Reveal>
+          <SectionHead
+            overline="Why Checkpoint"
+            title="Neither a script suite nor a beta. Both, automated."
+            center maxWidth={760}
+          />
+        </Reveal>
+        <div className="ck-compare" style={{ marginTop: 48 }}>
+          {cols.map((c, i) => (
+            <Reveal key={c.label} delay={i * 90}>
+              <Card accent={c.accent} style={{ height: '100%' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <IconTile name={c.icon} accent={c.accent} />
+                    <span className="ck-compare__label">{c.label}</span>
+                  </div>
+                  <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-semibold)',
+                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)', lineHeight: 1.25 }}>
+                    {c.title}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 2 }}>
+                    {c.points.map((p, j) => (
+                      <div key={j} style={{ display: 'grid', gridTemplateColumns: '18px 1fr', gap: 9, alignItems: 'start' }}>
+                        <Icon name="check" size={15} style={{ color: c.accent, marginTop: 2 }} />
+                        <span style={{ fontSize: 'var(--fs-small)', lineHeight: 1.5, color: 'var(--text-secondary)' }}>{p}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* ROADMAP                                                              */
+/* ------------------------------------------------------------------ */
+
+function Roadmap() {
+  const phases = [
+    {
+      tag: 'Today', pin: 'var(--accent)', live: true,
+      title: 'AI playtesting for Unity',
+      body: 'Indie & AA studios that ship fast but lack dedicated QA. Autonomous playtests on every build.',
+    },
+    {
+      tag: 'Next', pin: 'var(--info)',
+      title: 'Predictive engagement analytics',
+      body: 'Forecast retention and pacing risk from simulated cohorts before launch.',
+    },
+    {
+      tag: 'Next', pin: 'var(--persona-completionist)',
+      title: 'Automated balancing',
+      body: 'Surface dominant strategies and difficulty outliers, with suggested tuning.',
+    },
+    {
+      tag: 'Horizon', pin: 'var(--text-muted)',
+      title: 'Large-scale behavioral simulation',
+      body: 'The AI simulation layer for modern game development — across engines and genres.',
+    },
+  ];
+  return (
+    <section className="ck-section" id="roadmap">
+      <Container>
+        <Reveal>
+          <SectionHead
+            overline="Who it's for · where it's going"
+            title="Built for Unity studios today. The simulation layer for games tomorrow."
+            lede="We start where iteration is fastest and QA is thinnest — indie and AA Unity teams — and expand into the analytics and simulation that shape the game before launch."
+          />
+        </Reveal>
+        <Reveal delay={80}>
+          <div className="ck-roadmap" style={{ marginTop: 52 }}>
+            {phases.map((p, i) => (
+              <div key={i} className="ck-roadmap__item">
+                <div className="ck-roadmap__node">
+                  <span
+                    className={`ck-roadmap__pin${p.live ? ' ck-live-dot' : ''}`}
+                    style={{ background: p.pin }}>
+                  </span>
+                  {i < phases.length - 1 && <span className="ck-roadmap__line"></span>}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span className="ck-mono" style={{
+                    fontSize: 'var(--fs-micro)', letterSpacing: 'var(--tracking-caps)',
+                    textTransform: 'uppercase',
+                    color: p.live ? 'var(--accent)' : 'var(--text-muted)',
+                  }}>{p.tag}</span>
+                  <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 'var(--fw-semibold)',
+                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)', lineHeight: 1.25 }}>
+                    {p.title}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--fs-small)', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                    {p.body}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* CTA BAND                                                             */
+/* ------------------------------------------------------------------ */
+
+function CTA() {
+  const { Button, Input } = CK;
+  return (
+    <section className="ck-section ck-section--tight">
+      <Container>
+        <Reveal>
+          <div className="ck-cta">
+            <div style={{
+              position: 'relative', zIndex: 1,
+              display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40, alignItems: 'center',
+            }} className="ck-cta-grid">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'flex-start' }}>
+                <Overline>Get started</Overline>
+                <h2 className="ck-h-section" style={{ maxWidth: 460 }}>
+                  Give every build an always-on playtesting layer.
+                </h2>
+                <p className="ck-lede" style={{ maxWidth: 440 }}>
+                  Book a demo and we'll run Checkpoint against one of your builds — and walk you through
+                  the findings, recordings, and synthetic-player report.
+                </p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="ck-cta__form">
+                  <Input placeholder="you@studio.com" type="email" style={{ flex: '1 1 200px' }} />
+                  <Button variant="primary" size="md" iconRight={<Icon name="arrow" size={15} />}>
+                    Book a demo
+                  </Button>
+                </div>
+                <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
+                  Unity builds · SOC 2 in progress · your builds stay private
+                </span>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* FOOTER                                                               */
+/* ------------------------------------------------------------------ */
+
+function Footer() {
+  const cols = [
+    { h: 'Product',   links: ['How it works', 'Reports', 'Pricing'] },
+    { h: 'Company',   links: ['About', 'Careers', 'Blog', 'Contact'] },
+    { h: 'Resources', links: ['Docs', 'Unity setup', 'Security', 'Status'] },
+  ];
+  return (
+    <footer className="ck-footer">
+      <Container>
+        <div className="ck-footer__row">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 280 }}>
+            <Logo height={24} />
+            <p style={{ margin: 0, fontSize: 'var(--fs-small)', lineHeight: 1.5, color: 'var(--text-muted)' }}>
+              The AI playtesting layer for modern game development.
+            </p>
+            <span className="ck-livechip" style={{ alignSelf: 'flex-start' }}>
+              <span className="ck-live-dot"></span>All systems operational
+            </span>
+          </div>
+          <div className="ck-footer__cols">
+            {cols.map((c) => (
+              <div key={c.h} className="ck-footer__col">
+                <h5>{c.h}</h5>
+                {c.links.map((l) => <a key={l} href="#">{l}</a>)}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="ck-divider"></div>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
+          padding: '20px 0 36px',
+          fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text-muted)',
+        }}>
+          <span>© 2026 Checkpoint, Inc.</span>
+          <span style={{ display: 'flex', gap: 20 }}>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+          </span>
+        </div>
+      </Container>
+    </footer>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* APP MOUNT                                                            */
+/* ------------------------------------------------------------------ */
+
+function App() {
+  return (
+    <React.Fragment>
+      <Nav />
+      <Hero />
+      <Problem />
+      <HowItWorks />
+      <Reports />
+      <Why />
+      <Roadmap />
+      <CTA />
+      <Footer />
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>
