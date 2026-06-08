@@ -1,4 +1,4 @@
-/* cta_footer.jsx — closing CTA band + footer. */
+/* cta_footer.jsx: closing CTA band and footer. */
 const CK4 = window.CheckpointDesignSystem_70abd3;
 
 function CTA() {
@@ -23,7 +23,7 @@ function CTA() {
                   <Button variant="primary" size="md" iconRight={<Icon name="arrow" size={15} />}>Book a demo</Button>
                 </div>
                 <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
-                  Unity builds · SOC 2 in progress · your builds stay private
+                  Game builds · SOC 2 in progress · your builds stay private
                 </span>
               </div>
             </div>
@@ -38,7 +38,7 @@ function Footer() {
   const cols = [
     { h: 'Product', links: ['How it works', 'Reports', 'Pricing'] },
     { h: 'Company', links: ['About', 'Careers', 'Blog', 'Contact'] },
-    { h: 'Resources', links: ['Docs', 'Unity setup', 'Security', 'Status'] },
+    { h: 'Resources', links: ['Docs', 'Get started', 'Security', 'Status'] },
   ];
   return (
     <footer className="ck-footer">

@@ -1,4 +1,4 @@
-/* primitives.jsx — shared layout helpers, exported to window for cross-file use. */
+/* primitives.jsx: shared layout helpers, exported to window for cross-file use. */
 const { useRef, useEffect, useState } = React;
 
 function Container({ children, style }) {
@@ -10,7 +10,7 @@ function Overline({ children }) {
 }
 
 /* Reveal wrapper.
-   Content is ALWAYS visible (the base style is the end state) — important
+   Content is ALWAYS visible (the base style is the end state). This is important
    because CSS transitions freeze when the rendering surface is backgrounded.
    A gentle one-shot translate-in is applied only via IntersectionObserver,
    so if it never fires the content simply stays put and visible. */

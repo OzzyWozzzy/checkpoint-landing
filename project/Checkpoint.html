@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Checkpoint — AI Playtesting for Every Build</title>
+<title>Checkpoint: AI Playtesting for Every Build</title>
 
 <!-- three.js + cannon-es for the hero's ambient ragdoll backdrop -->
 <script type="importmap">
@@ -28,7 +28,7 @@
 
 <style>
 /* ============================================================
-   Checkpoint landing page — layout & theme
+   Checkpoint landing page: layout and theme
    Warm beige surfaces, plum brand accent, severity as the spine.
    ============================================================ */
 
@@ -136,14 +136,14 @@ img { display: block; max-width: 100%; }
 }
 /* Faded, centered 3D ragdoll backdrop (head + torso framing). It lives
    INSIDE the 100vh splash, so scrolling to the content below carries it
-   out of view — the avatar is only present on the landing screen.
-   pointer-events:none — the sim reads cursor motion at the window level,
+   out of view. The avatar is only present on the landing screen.
+   pointer-events:none. The sim reads cursor motion at the window level,
    so it never blocks the copy or links. */
 .ck-splash__dummy {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
   opacity: 0.32;
   /* narrow elliptical fade so only the central head+torso column shows and
-     the wide arms melt away — keeps the side copy from overlapping the body */
+     the wide arms melt away to keep the side copy from overlapping the body */
   -webkit-mask-image: radial-gradient(26% 76% at 50% 44%, #000 46%, transparent 100%);
   mask-image: radial-gradient(26% 76% at 50% 44%, #000 46%, transparent 100%);
 }
@@ -282,7 +282,7 @@ img { display: block; max-width: 100%; }
 .ck-footer__col a:hover { color: var(--text-strong); }
 
 /* ---- Entrance animation --------------------------------- */
-/* Content is always visible — transitions freeze when backgrounded, so the
+/* Content is always visible. Transitions freeze when backgrounded, so the
    end-state must never depend on one running. is-in adds a one-shot lift. */
 .ck-reveal { opacity: 1; }
 @media (prefers-reduced-motion: no-preference) {
@@ -315,7 +315,7 @@ img { display: block; max-width: 100%; }
 :root {
   color-scheme: light;
 
-  /* surfaces — warm cream ramp */
+  /* surfaces: warm cream ramp */
   --bg-app:         #ece3d2;
   --bg-sunken:      #e3d8c3;
   --surface-panel:  #f2ecdf;
@@ -329,7 +329,7 @@ img { display: block; max-width: 100%; }
   --border-hairline: #ddd0b8;
   --border-strong:   #c2b193;
 
-  /* text — warm near-black ramp */
+  /* text: warm near-black ramp */
   --text-max:       #20190d;
   --text-strong:    #2f2718;
   --text-body:      #463c29;
@@ -346,7 +346,7 @@ img { display: block; max-width: 100%; }
   /* live shimmer track */
   --live-track: #ead7df;
 
-  /* brand ramp: plum/wine — complements warm beige, distinct from all severity hues */
+  /* brand ramp: plum/wine (complements warm beige, distinct from all severity hues) */
   --lime-muted:  #ead7df;
   --lime-dim:    #c07d96;
   --lime:        #9b3a61;
@@ -375,7 +375,7 @@ img { display: block; max-width: 100%; }
 
 <script type="text/babel">
 /* ============================================================
-   Checkpoint — landing page components
+   Checkpoint: landing page components
    Single compiled bundle (no separate JSX file fetches).
    ============================================================ */
 
@@ -394,7 +394,7 @@ function Overline({ children }) {
   return <span className="ck-overline-accent">{children}</span>;
 }
 
-/* Reveal — content is always visible (end-state is the base state).
+/* Reveal: content is always visible (end-state is the base state).
    IntersectionObserver fires a one-shot entrance animation when the
    element scrolls in, but a missed trigger never hides anything. */
 function Reveal({ children, delay = 0, as = 'div', className = '', style }) {
@@ -430,7 +430,7 @@ function SectionHead({ overline, title, lede, center = false, maxWidth }) {
   );
 }
 
-/* Stroke icons — drawn inline so no icon font dependency */
+/* Stroke icons: drawn inline so no icon font dependency */
 function Icon({ name, size = 18, stroke = 1.75, style }) {
   const paths = {
     upload:   <><path d="M12 16V4M12 4l-4 4M12 4l4 4" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16" strokeLinecap="round"/></>,
@@ -488,7 +488,7 @@ function Logo({ height = 28 }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* SPLASH — full-screen landing (giant wordmark + intro + 3D backdrop) */
+/* SPLASH: full-screen landing (giant wordmark + intro + 3D backdrop) */
 /* ------------------------------------------------------------------ */
 
 function Splash() {
@@ -502,9 +502,9 @@ function Splash() {
           <p className="ck-splash__lead">An always-on AI playtesting layer for every build.</p>
           <p className="ck-splash__sub">
             Multimodal agents play your game like real players and stream back structured,
-            triage-ready reports — recordings, repro steps, crashes and balance data.
+            triage-ready reports: recordings, repro steps, crashes and balance data.
           </p>
-          <p className="ck-splash__cta">Ready when you are — <a href="#reports">see a sample report</a></p>
+          <p className="ck-splash__cta">Ready when you are. <a href="#reports">See a sample report</a></p>
         </div>
       </div>
       <a className="ck-splash__scroll" href="#how" aria-label="Scroll to content">Scroll</a>
@@ -537,7 +537,7 @@ function Nav() {
   );
 }
 
-/* Live run instrument panel — proof-of-product in the hero */
+/* Live run instrument panel: proof-of-product in the hero */
 function LiveRunPanel() {
   const { Card, SeverityBadge, Metric, Tag } = CK;
   const findings = [
@@ -612,7 +612,7 @@ function Hero() {
               An always-on AI playtesting layer for every build.
             </h1>
             <p className="ck-lede" style={{ maxWidth: 520 }}>
-              Checkpoint runs multimodal agents that play your game like real players — watching the
+              Checkpoint runs multimodal agents that play your game like real players, watching the
               screen, driving keyboard and mouse, and returning structured reports with recordings,
               repro steps, crashes, and balance data. On every build. At scale.
             </p>
@@ -629,7 +629,7 @@ function Hero() {
               <span className="dot"></span>
               <span>Runs on every build</span>
               <span className="dot"></span>
-              <span>Built for Unity</span>
+              <span>AI-Powered Playtesting</span>
             </div>
           </div>
           <Reveal delay={80}><LiveRunPanel /></Reveal>
@@ -654,7 +654,7 @@ function Problem() {
     {
       icon: 'clock',
       title: 'Discovered too late',
-      body: 'Retention, pacing, and balance problems usually surface after launch — through churn, refunds, and reviews.',
+      body: 'Retention, pacing, and balance problems usually surface after launch through churn, refunds, and reviews.',
     },
     {
       icon: 'layers',
@@ -669,7 +669,7 @@ function Problem() {
           <SectionHead
             overline="The QA bottleneck"
             title="Game QA is the slowest, most expensive loop in development."
-            lede="Studios depend on human playtesters to catch bugs, balance issues, and UX friction — but that work is repetitive, expensive, and never finished. The hardest problems hide in engagement and retention, and those rarely show up until real players churn."
+            lede="Studios depend on human playtesters to catch bugs, balance issues, and UX friction. But that work is repetitive, expensive, and never finished. The hardest problems hide in engagement and retention, and those rarely show up until real players churn."
           />
         </Reveal>
         <div className="ck-grid-3" style={{ marginTop: 48 }}>
@@ -746,7 +746,7 @@ function HowItWorks() {
     {
       n: '01', icon: 'upload',
       title: 'Upload a build',
-      body: 'Drop in your Unity build. No instrumentation, no test harness, no scripted cases to maintain.',
+      body: 'Drop in your build. No instrumentation, no test harness, no scripted cases to maintain.',
     },
     {
       n: '02', icon: 'target',
@@ -766,7 +766,7 @@ function HowItWorks() {
           <SectionHead
             overline="How it works"
             title="From build to findings in three steps."
-            lede="No manual test cases. Checkpoint observes the screen and drives real keyboard and mouse input — so it tests the game your players actually see."
+            lede="No manual test cases. Checkpoint observes the screen and drives real keyboard and mouse input, so it tests the game your players actually see."
           />
         </Reveal>
         <div className="ck-steps" style={{ marginTop: 48 }}>
@@ -842,7 +842,7 @@ function Reports() {
         <Reveal>
           <SectionHead
             overline="What you get back"
-            title="Structured reports, not just a pass/fail."
+            title="Structured reports"
             lede="Every run returns triage-ready findings: severity, type, the build it hit, gameplay recordings, and exact reproduction steps your engineers can act on immediately."
           />
         </Reveal>
@@ -916,7 +916,7 @@ function Why() {
       title: 'No test cases to write or maintain.',
       points: [
         'Agents observe and react instead of replaying brittle scripts',
-        'New build, same plain-English objectives — no rework',
+        'New build, same plain-English objectives with no rework',
         'Catches the unscripted paths real players actually take',
       ],
     },
@@ -931,7 +931,7 @@ function Why() {
     },
     {
       label: 'our stance', accent: 'var(--healthy)', icon: 'hand',
-      title: 'Augments your QA team — doesn\'t replace it.',
+      title: 'Augments your QA team, does not replace it.',
       points: [
         'An always-on layer that surfaces issues earlier',
         'Frees human testers for judgment and feel',
@@ -945,7 +945,7 @@ function Why() {
         <Reveal>
           <SectionHead
             overline="Why Checkpoint"
-            title="Neither a script suite nor a beta. Both, automated."
+            title="Real-world playtesting, fully automated."
             center maxWidth={760}
           />
         </Reveal>
@@ -988,7 +988,7 @@ function Roadmap() {
   const phases = [
     {
       tag: 'Today', pin: 'var(--accent)', live: true,
-      title: 'AI playtesting for Unity',
+      title: 'AI playtesting for game studios',
       body: 'Indie & AA studios that ship fast but lack dedicated QA. Autonomous playtests on every build.',
     },
     {
@@ -1004,7 +1004,7 @@ function Roadmap() {
     {
       tag: 'Horizon', pin: 'var(--text-muted)',
       title: 'Large-scale behavioral simulation',
-      body: 'The AI simulation layer for modern game development — across engines and genres.',
+      body: 'The AI simulation layer for modern game development across engines and genres.',
     },
   ];
   return (
@@ -1013,8 +1013,8 @@ function Roadmap() {
         <Reveal>
           <SectionHead
             overline="Who it's for · where it's going"
-            title="Built for Unity studios today. The simulation layer for games tomorrow."
-            lede="We start where iteration is fastest and QA is thinnest — indie and AA Unity teams — and expand into the analytics and simulation that shape the game before launch."
+            title="Built for game studios today. The simulation layer for games tomorrow."
+            lede="We start where iteration is fastest and QA is thinnest (indie and AA studios) and expand into the analytics and simulation that shape the game before launch."
           />
         </Reveal>
         <Reveal delay={80}>
@@ -1072,7 +1072,7 @@ function CTA() {
                   Give every build an always-on playtesting layer.
                 </h2>
                 <p className="ck-lede" style={{ maxWidth: 440 }}>
-                  Book a demo and we'll run Checkpoint against one of your builds — and walk you through
+                  Book a demo and we'll run Checkpoint against one of your builds, and walk you through
                   the findings, recordings, and synthetic-player report.
                 </p>
               </div>
@@ -1084,7 +1084,7 @@ function CTA() {
                   </Button>
                 </div>
                 <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
-                  Unity builds · SOC 2 in progress · your builds stay private
+                  Game builds · SOC 2 in progress · your builds stay private
                 </span>
               </div>
             </div>
@@ -1103,7 +1103,7 @@ function Footer() {
   const cols = [
     { h: 'Product',   links: ['How it works', 'Reports', 'Pricing'] },
     { h: 'Company',   links: ['About', 'Careers', 'Blog', 'Contact'] },
-    { h: 'Resources', links: ['Docs', 'Unity setup', 'Security', 'Status'] },
+    { h: 'Resources', links: ['Docs', 'Get started', 'Security', 'Status'] },
   ];
   return (
     <footer className="ck-footer">
@@ -1175,7 +1175,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
      behind the hero copy. Aim-based bone driving keeps the skinned
      mesh from corkscrewing; pose/limit velocity-servos hold a neutral
      stance; cursor sweeps over the hero knock it around. The canvas is
-     pointer-events:none — cursor motion is read at the window level so
+     pointer-events:none. Cursor motion is read at the window level so
      buttons, links and text selection are never blocked.
      ============================================================ -->
 <script type="module">
@@ -1229,7 +1229,7 @@ function startHeroDummy(container) {
   });
   ro.observe(container);
 
-  // ---- lights (no shadows/floor — feet are pinned anchors) ----
+  // ---- lights (no shadows/floor. feet are pinned anchors) ----
   scene.add(new THREE.HemisphereLight(0xfff4e6, 0x6b5a44, 1.05));
   const key = new THREE.DirectionalLight(0xffffff, 1.9); key.position.set(3.5, 6, 5); scene.add(key);
   const rim = new THREE.DirectionalLight(0xffe8c8, 0.55); rim.position.set(-4, 3.5, -2); scene.add(rim);
@@ -1372,7 +1372,7 @@ function startHeroDummy(container) {
     // (then straighten the forearm about the elbow) so the arms rest at the
     // sides. Rotating about the joint POINT keeps every constraint anchor
     // coincident. This runs AFTER the aim setup so each bone's bind reference
-    // is the true A-pose and the aims map bind→down at runtime — including the
+    // is the true A-pose and the aims map bind→down at runtime, including the
     // hand, whose aim reads its body (moving it before the aim capture would
     // leave the hand stuck facing outward in its splayed bind orientation).
     const _downV = new THREE.Vector3(0, -1, 0);

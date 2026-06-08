@@ -31,7 +31,7 @@ function ObjectiveComposer() {
 function HowItWorks() {
   const { Card } = CK2;
   const steps = [
-    { n: '01', icon: 'upload', title: 'Upload a build', body: 'Drop in your Unity build. No instrumentation, no test harness, no scripted cases to maintain.' },
+    { n: '01', icon: 'upload', title: 'Upload a build', body: 'Drop in your build. No instrumentation, no test harness, no scripted cases to maintain.' },
     { n: '02', icon: 'target', title: 'Define objectives in plain English', body: 'Describe what to test the way you’d brief a tester. Checkpoint turns each line into an agent goal.' },
     { n: '03', icon: 'cpu', title: 'Run autonomous playtests at scale', body: 'Agents spin up by the hundreds, play to your objectives, and stream structured findings as they go.' },
   ];

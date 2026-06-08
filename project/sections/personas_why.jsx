@@ -1,4 +1,4 @@
-/* personas_why.jsx — why Checkpoint, roadmap. */
+/* personas_why.jsx: why Checkpoint, roadmap. */
 const CK3 = window.CheckpointDesignSystem_70abd3;
 
 /* ---- Why Checkpoint (3-way contrast) ---- */
@@ -8,7 +8,7 @@ function Why() {
     {
       label: 'vs. scripted automation', accent: 'var(--info)', icon: 'cpu',
       title: 'No test cases to write or maintain.',
-      points: ['Agents observe and react instead of replaying brittle scripts', 'New build, same plain-English objectives — no rework', 'Catches the unscripted paths real players actually take'],
+      points: ['Agents observe and react instead of replaying brittle scripts', 'New build, same plain-English objectives with no rework', 'Catches the unscripted paths real players actually take'],
     },
     {
       label: 'vs. human beta testing', accent: 'var(--accent)', icon: 'bolt',
@@ -17,7 +17,7 @@ function Why() {
     },
     {
       label: 'our stance', accent: 'var(--healthy)', icon: 'hand',
-      title: 'Augments your QA team — doesn’t replace it.',
+      title: 'Augments your QA team, does not replace it.',
       points: ['An always-on layer that surfaces issues earlier', 'Frees human testers for judgment and feel', 'More iterations, more coverage, less guesswork'],
     },
   ];
@@ -27,7 +27,7 @@ function Why() {
         <Reveal>
           <SectionHead
             overline="Why Checkpoint"
-            title="Neither a script suite nor a beta. Both, automated."
+            title="Real-world playtesting, fully automated."
             center maxWidth={760}
           />
         </Reveal>
@@ -62,10 +62,10 @@ function Why() {
 /* ---- Audience + roadmap ---- */
 function Roadmap() {
   const phases = [
-    { tag: 'Today', pin: 'var(--accent)', live: true, title: 'AI playtesting for Unity', body: 'Indie & AA studios that ship fast but lack dedicated QA. Autonomous playtests on every build.' },
+    { tag: 'Today', pin: 'var(--accent)', live: true, title: 'AI playtesting for game studios', body: 'Indie & AA studios that ship fast but lack dedicated QA. Autonomous playtests on every build.' },
     { tag: 'Next', pin: 'var(--info)', title: 'Predictive engagement analytics', body: 'Forecast retention and pacing risk from simulated cohorts before launch.' },
     { tag: 'Next', pin: 'var(--persona-completionist)', title: 'Automated balancing', body: 'Surface dominant strategies and difficulty outliers, with suggested tuning.' },
-    { tag: 'Horizon', pin: 'var(--text-muted)', title: 'Large-scale behavioral simulation', body: 'The AI simulation layer for modern game development — across engines and genres.' },
+    { tag: 'Horizon', pin: 'var(--text-muted)', title: 'Large-scale behavioral simulation', body: 'The AI simulation layer for modern game development across engines and genres.' },
   ];
   return (
     <section className="ck-section" id="roadmap">
@@ -73,8 +73,8 @@ function Roadmap() {
         <Reveal>
           <SectionHead
             overline="Who it’s for · where it’s going"
-            title="Built for Unity studios today. The simulation layer for games tomorrow."
-            lede="We start where iteration is fastest and QA is thinnest — indie and AA Unity teams — and expand into the analytics and simulation that shape the game before launch."
+            title="Built for game studios today. The simulation layer for games tomorrow."
+            lede="We start where iteration is fastest and QA is thinnest (indie and AA studios) and expand into the analytics and simulation that shape the game before launch."
           />
         </Reveal>
         <Reveal delay={80}>

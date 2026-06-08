@@ -1,4 +1,4 @@
-/* nav_hero.jsx — top nav, hero with live-run instrument panel, problem band. */
+/* nav_hero.jsx: top nav, hero with live-run instrument panel, problem band. */
 const CK = window.CheckpointDesignSystem_70abd3;
 
 function Logo({ height = 28 }) {
@@ -103,7 +103,7 @@ function Hero() {
             <Overline>AI playtesting platform</Overline>
             <h1 className="ck-h-display">An always-on AI playtesting layer for every build.</h1>
             <p className="ck-lede" style={{ maxWidth: 520 }}>
-              Checkpoint runs multimodal agents that play your game like real players — watching the
+              Checkpoint runs multimodal agents that play your game like real players, watching the
               screen, driving keyboard and mouse, and returning structured reports with recordings,
               repro steps, crashes, and balance data. On every build. At scale.
             </p>
@@ -114,7 +114,7 @@ function Hero() {
             <div className="ck-hero__trust">
               <span>No test scripts</span><span className="dot"></span>
               <span>Runs on every build</span><span className="dot"></span>
-              <span>Built for Unity</span>
+              <span>AI-Powered Playtesting</span>
             </div>
           </div>
           <Reveal delay={80}><LiveRunPanel /></Reveal>
@@ -129,7 +129,7 @@ function Problem() {
   const { Card } = CK;
   const items = [
     { icon: 'repeat', title: 'Manual & repetitive', body: 'Human testers replay tutorials, levels, combat, menus, and progression by hand after every new build.' },
-    { icon: 'clock', title: 'Discovered too late', body: 'Retention, pacing, and balance problems usually surface after launch — through churn, refunds, and reviews.' },
+    { icon: 'clock', title: 'Discovered too late', body: 'Retention, pacing, and balance problems usually surface after launch through churn, refunds, and reviews.' },
     { icon: 'layers', title: "Doesn't scale", body: 'Coverage is capped by tester hours, so most builds ship only partially playtested under deadline pressure.' },
   ];
   return (
@@ -139,7 +139,7 @@ function Problem() {
           <SectionHead
             overline="The QA bottleneck"
             title="Game QA is the slowest, most expensive loop in development."
-            lede="Studios depend on human playtesters to catch bugs, balance issues, and UX friction — but that work is repetitive, expensive, and never finished. The hardest problems hide in engagement and retention, and those rarely show up until real players churn."
+            lede="Studios depend on human playtesters to catch bugs, balance issues, and UX friction. But that work is repetitive, expensive, and never finished. The hardest problems hide in engagement and retention, and those rarely show up until real players churn."
           />
         </Reveal>
         <div className="ck-grid-3" style={{ marginTop: 48 }}>
