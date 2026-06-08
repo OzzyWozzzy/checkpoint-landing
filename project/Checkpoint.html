@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Checkpoint — AI Playtesting for Every Build</title>
 
+<!-- three.js + cannon-es for the hero's ambient ragdoll backdrop -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+    "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+  }
+}
+</script>
+
 <!-- Design system: fonts + tokens + component styles -->
 <link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/fonts/fonts.css">
 <link rel="stylesheet" href="_ds/checkpoint-design-system-70abd302-645a-4507-b758-c8c1aa349e29/tokens/colors.css">
@@ -114,6 +125,67 @@ img { display: block; max-width: 100%; }
     radial-gradient(680px 420px at 78% -8%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 70%),
     radial-gradient(900px 500px at 8% 0%, color-mix(in oklab, var(--info) 7%, transparent), transparent 65%);
 }
+/* ---- Splash (full-screen landing page) ------------------- */
+.ck-splash {
+  position: relative; height: 100vh; min-height: 620px;
+  overflow: hidden; background: var(--bg-app);
+}
+/* Faded, centered 3D ragdoll backdrop (head + torso framing). It lives
+   INSIDE the 100vh splash, so scrolling to the content below carries it
+   out of view — the avatar is only present on the landing screen.
+   pointer-events:none — the sim reads cursor motion at the window level,
+   so it never blocks the copy or links. */
+.ck-splash__dummy {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  opacity: 0.32;
+  /* narrow elliptical fade so only the central head+torso column shows and
+     the wide arms melt away — keeps the side copy from overlapping the body */
+  -webkit-mask-image: radial-gradient(26% 76% at 50% 44%, #000 46%, transparent 100%);
+  mask-image: radial-gradient(26% 76% at 50% 44%, #000 46%, transparent 100%);
+}
+.ck-splash__dummy canvas { display: block; }
+/* thin diagonal, echoing the reference layout */
+.ck-splash__line {
+  position: absolute; top: 14%; left: 50%; width: 1px; height: 64%;
+  background: var(--border-strong); opacity: 0.5; z-index: 1;
+  transform: rotate(33deg); transform-origin: top center; pointer-events: none;
+}
+.ck-splash__inner { position: relative; z-index: 2; height: 100%; max-width: 1280px; margin: 0 auto; }
+.ck-splash__title {
+  position: absolute; left: clamp(20px, 5vw, 64px); bottom: 16vh; margin: 0;
+  font-family: var(--font-sans); font-weight: var(--fw-bold);
+  font-size: clamp(2.3rem, 5.6vw, 5rem); line-height: 0.9;
+  letter-spacing: -0.035em; color: var(--text-max);
+}
+.ck-splash__dot { display: inline-block; width: 0.13em; height: 0.13em; border-radius: 50%; background: var(--accent); margin-left: 0.04em; }
+.ck-splash__intro {
+  position: absolute; right: clamp(20px, 5vw, 64px); top: 17%;
+  width: min(400px, 40vw); text-align: right;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 14px;
+}
+.ck-splash__lead {
+  margin: 0; color: var(--text-max); font-family: var(--font-sans); font-weight: var(--fw-semibold);
+  font-size: clamp(1.05rem, 1.7vw, 1.4rem); line-height: 1.25; letter-spacing: var(--tracking-snug);
+}
+.ck-splash__sub { margin: 0; color: var(--text-secondary); line-height: 1.55; }
+.ck-splash__cta { margin: 4px 0 0; font-family: var(--font-mono); font-size: var(--fs-small); letter-spacing: var(--tracking-snug); color: var(--text-muted); }
+.ck-splash__cta a { color: var(--accent); border-bottom: 1px solid color-mix(in oklab, var(--accent) 45%, transparent); }
+.ck-splash__cta a:hover { color: var(--text-max); }
+.ck-splash__scroll {
+  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 2;
+  font-family: var(--font-mono); font-size: var(--fs-micro); letter-spacing: var(--tracking-caps);
+  text-transform: uppercase; color: var(--text-muted);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.ck-splash__scroll::after { content: ""; width: 1px; height: 22px; background: var(--border-strong); }
+@media (max-width: 860px) {
+  .ck-splash__title { font-size: clamp(2.75rem, 15vw, 5rem); bottom: auto; top: 15%; }
+  .ck-splash__intro { top: auto; bottom: 16%; left: clamp(20px, 5vw, 64px); right: clamp(20px, 5vw, 64px); width: auto; }
+  .ck-splash__line { display: none; }
+  .ck-splash__dummy { opacity: 0.26; }
+}
+@media (prefers-reduced-motion: reduce) { .ck-splash__dummy { opacity: 0.28; } }
+
 .ck-hero__grid {
   position: relative; z-index: 1;
   display: grid; grid-template-columns: 1.02fr 0.98fr; gap: 56px; align-items: center;
@@ -411,6 +483,31 @@ function Logo({ height = 28 }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* SPLASH — full-screen landing (giant wordmark + intro + 3D backdrop) */
+/* ------------------------------------------------------------------ */
+
+function Splash() {
+  return (
+    <header className="ck-splash" id="top">
+      <div className="ck-splash__dummy" id="splash-dummy" aria-hidden="true"></div>
+      <span className="ck-splash__line" aria-hidden="true"></span>
+      <div className="ck-splash__inner">
+        <h1 className="ck-splash__title">Checkpoint<br />AI<span className="ck-splash__dot"></span></h1>
+        <div className="ck-splash__intro">
+          <p className="ck-splash__lead">An always-on AI playtesting layer for every build.</p>
+          <p className="ck-splash__sub">
+            Multimodal agents play your game like real players and stream back structured,
+            triage-ready reports — recordings, repro steps, crashes and balance data.
+          </p>
+          <p className="ck-splash__cta">Ready when you are — <a href="#reports">see a sample report</a></p>
+        </div>
+      </div>
+      <a className="ck-splash__scroll" href="#how" aria-label="Scroll to content">Scroll</a>
+    </header>
+  );
+}
+
 function Nav() {
   const { Button } = CK;
   return (
@@ -501,7 +598,7 @@ function LiveRunPanel() {
 function Hero() {
   const { Button } = CK;
   return (
-    <header className="ck-hero" id="top">
+    <header className="ck-hero">
       <div className="ck-hero__glow"></div>
       <Container>
         <div className="ck-hero__grid">
@@ -650,7 +747,7 @@ function HowItWorks() {
     {
       n: '02', icon: 'target',
       title: 'Define objectives in plain English',
-      body: 'Describe what to test the way you'd brief a tester. Checkpoint turns each line into an agent goal.',
+      body: "Describe what to test the way you'd brief a tester. Checkpoint turns each line into an agent goal.",
     },
     {
       n: '03', icon: 'cpu',
@@ -1050,6 +1147,7 @@ function Footer() {
 function App() {
   return (
     <React.Fragment>
+      <Splash />
       <Nav />
       <Hero />
       <Problem />
@@ -1064,6 +1162,322 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<!-- ============================================================
+     Hero ambient ragdoll backdrop
+     A faded, interactive crash-test-dummy (the same skinned model +
+     cannon-es ragdoll as crash-dummy.html) rendered transparently
+     behind the hero copy. Aim-based bone driving keeps the skinned
+     mesh from corkscrewing; pose/limit velocity-servos hold a neutral
+     stance; cursor sweeps over the hero knock it around. The canvas is
+     pointer-events:none — cursor motion is read at the window level so
+     buttons, links and text selection are never blocked.
+     ============================================================ -->
+<script type="module">
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const MODEL_URL = 'crash-dummy/crush_dummy.glb';
+const TEX_BASE  = 'crash-dummy/textures/crush_dummy_default_';
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// wait for React to mount the hero container, then boot. Uses setTimeout
+// (not rAF) so it still fires if the tab is backgrounded during load.
+(function waitFor(tries) {
+  const el = document.getElementById('splash-dummy');
+  if (el) { try { startHeroDummy(el); } catch (e) { console.error('hero dummy failed', e); } return; }
+  if (tries > 0) setTimeout(() => waitFor(tries - 1), 50);
+})(200);
+
+function startHeroDummy(container) {
+  const ONE = new THREE.Vector3(1, 1, 1);
+  const Y_AXIS = new THREE.Vector3(0, 1, 0);
+
+  // ---- renderer / scene / camera (transparent, sized to the hero) ----
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.setClearColor(0x000000, 0);
+  const cw = () => container.clientWidth || 1, ch = () => container.clientHeight || 1;
+  renderer.setSize(cw(), ch());
+  container.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, cw() / ch(), 0.1, 100);
+  // Centered, zoomed to the upper body so only the head + torso show.
+  const camTarget = new THREE.Vector3(0, 1.42, 0);
+  const camDir = new THREE.Vector3(0.20, 0.05, 1).normalize();
+  function frameCamera() {
+    const H = 1.25, W = 0.95, margin = 1.06;
+    const vfov = THREE.MathUtils.degToRad(camera.fov);
+    const distH = (H * margin / 2) / Math.tan(vfov / 2);
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+    const distW = (W * margin / 2) / Math.tan(hfov / 2);
+    camera.position.copy(camTarget).addScaledVector(camDir, Math.max(distH, distW));
+    camera.lookAt(camTarget);
+  }
+  frameCamera();
+  const ro = new ResizeObserver(() => {
+    camera.aspect = cw() / ch(); camera.updateProjectionMatrix();
+    frameCamera(); renderer.setSize(cw(), ch());
+  });
+  ro.observe(container);
+
+  // ---- lights (no shadows/floor — feet are pinned anchors) ----
+  scene.add(new THREE.HemisphereLight(0xfff4e6, 0x6b5a44, 1.05));
+  const key = new THREE.DirectionalLight(0xffffff, 1.9); key.position.set(3.5, 6, 5); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xffe8c8, 0.55); rim.position.set(-4, 3.5, -2); scene.add(rim);
+
+  // ---- physics world ----
+  const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
+  world.broadphase = new CANNON.SAPBroadphase(world);
+  world.solver.iterations = 22;
+  world.solver.tolerance = 0.0008;
+  world.allowSleep = false;
+  const G_GROUND = 1, G_DUMMY = 2;
+  const groundBody = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), collisionFilterGroup: G_GROUND, collisionFilterMask: G_DUMMY });
+  groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+  world.addBody(groundBody);
+  const dummyMat = new CANNON.Material('dummy');
+  world.addContactMaterial(new CANNON.ContactMaterial(dummyMat, dummyMat, { friction: 0.6, restitution: 0.04 }));
+
+  const bodies = {}, restQuats = {}, restPos = {}, proxByName = {}, pickMeshes = [];
+  const jointLimits = [], jointByPivot = {}, aims = [], rootDrive = {};
+  let rootBone = null; const rootParentWorld = new THREE.Matrix4();
+
+  const TUNE = { limRate: 9, limBlend: 0.5, poseRate: 14, poseMaxW: 20, poseBlend: 0.45, linRate: 12, linMaxV: 9, linBlend: 0.3 };
+
+  // ---- load model, apply PBR textures, build ragdoll from bind skeleton ----
+  new GLTFLoader().load(MODEL_URL, (gltf) => {
+    const model = gltf.scene; scene.add(model);
+    const skinned = model.getObjectByProperty('isSkinnedMesh', true);
+    skinned.frustumCulled = false;
+    const tl = new THREE.TextureLoader();
+    const tex = (n, srgb) => { const t = tl.load(TEX_BASE + n); t.flipY = false; if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+    const mat = Array.isArray(skinned.material) ? skinned.material[0] : skinned.material;
+    mat.map = tex('BaseColor.tga.png', true);
+    mat.normalMap = tex('Normal.tga.png', false);
+    mat.roughnessMap = tex('Roughness.tga.png', false); mat.roughness = 1;
+    mat.metalnessMap = tex('Metallic.tga.png', false); mat.metalness = 1;
+    mat.aoMap = tex('Occlusion.tga.png', false);
+    mat.emissiveMap = tex('Emissive.tga.png', true); mat.emissive = new THREE.Color(0xffffff); mat.emissiveIntensity = 1;
+    mat.needsUpdate = true;
+    const geo = skinned.geometry;
+    if (geo.attributes.uv && !geo.attributes.uv2) geo.setAttribute('uv2', geo.attributes.uv);
+    build(model, skinned);
+    if (REDUCED) { driveBones(); renderer.render(scene, camera); } // static neutral stance
+    else animate();
+  }, undefined, (err) => console.error('hero model load failed', err));
+
+  function build(model, skinned) {
+    model.updateMatrixWorld(true);
+    const byn = {}; skinned.skeleton.bones.forEach((b) => { byn[b.name] = b; });
+    const P = (n) => byn[n].getWorldPosition(new THREE.Vector3());
+    const quatAlong = (d) => new THREE.Quaternion().setFromUnitVectors(Y_AXIS, d.clone().normalize());
+
+    const defs = [];
+    const limb = (name, bone, a, b, r, mass) => {
+      const c = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
+      defs.push({ name, bone, kind: 'box', he: [r, d.length() / 2, r], center: c, quat: quatAlong(d), mass });
+    };
+    const hand = (name, bone, wrist, elbow, mass) => {
+      const d = wrist.clone().sub(elbow), c = wrist.clone().add(d.clone().normalize().multiplyScalar(0.05));
+      defs.push({ name, bone, kind: 'box', he: [0.05, 0.06, 0.03], center: c, quat: quatAlong(d), mass });
+    };
+    defs.push({ name: 'pelvis', bone: 'pelvis', kind: 'box', he: [0.135, 0.11, 0.115], center: P('pelvis').add(new THREE.Vector3(0, 0.02, 0)), quat: new THREE.Quaternion(), mass: 12 });
+    { const a = P('spine_01'), b = P('neck_01'), c = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
+      defs.push({ name: 'chest', bone: 'spine_03', kind: 'box', he: [0.17, d.length() / 2, 0.12], center: c, quat: quatAlong(d), mass: 16 }); }
+    defs.push({ name: 'head', bone: 'head', kind: 'sphere', r: 0.12, center: P('head').add(new THREE.Vector3(0, 0.07, 0)), quat: new THREE.Quaternion(), mass: 5 });
+    limb('upperArmL', 'upperarm_l', P('upperarm_l'), P('lowerarm_l'), 0.05, 3);
+    limb('lowerArmL', 'lowerarm_l', P('lowerarm_l'), P('hand_l'), 0.045, 2);
+    hand('handL', 'hand_l', P('hand_l'), P('lowerarm_l'), 0.6);
+    limb('upperArmR', 'upperarm_r', P('upperarm_r'), P('lowerarm_r'), 0.05, 3);
+    limb('lowerArmR', 'lowerarm_r', P('lowerarm_r'), P('hand_r'), 0.045, 2);
+    hand('handR', 'hand_r', P('hand_r'), P('lowerarm_r'), 0.6);
+    limb('upperLegL', 'thigh_l', P('thigh_l'), P('calf_l'), 0.085, 7);
+    limb('lowerLegL', 'calf_l', P('calf_l'), P('foot_l'), 0.065, 5);
+    { const a = P('foot_l'), b = P('ball_l'), c = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
+      defs.push({ name: 'footL', bone: 'foot_l', kind: 'box', he: [0.06, 0.05, 0.10], center: c, quat: quatAlong(d), mass: 1, pinned: true }); }
+    limb('upperLegR', 'thigh_r', P('thigh_r'), P('calf_r'), 0.085, 7);
+    limb('lowerLegR', 'calf_r', P('calf_r'), P('foot_r'), 0.065, 5);
+    { const a = P('foot_r'), b = P('ball_r'), c = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
+      defs.push({ name: 'footR', bone: 'foot_r', kind: 'box', he: [0.06, 0.05, 0.10], center: c, quat: quatAlong(d), mass: 1, pinned: true }); }
+
+    const JDEF = [
+      ['pelvis', 'chest', 'spine_01', 0.40], ['chest', 'head', 'neck_01', 0.55],
+      ['chest', 'upperArmL', 'upperarm_l', 1.30], ['upperArmL', 'lowerArmL', 'lowerarm_l', 1.15], ['lowerArmL', 'handL', 'hand_l', 0.50],
+      ['chest', 'upperArmR', 'upperarm_r', 1.30], ['upperArmR', 'lowerArmR', 'lowerarm_r', 1.15], ['lowerArmR', 'handR', 'hand_r', 0.50],
+      ['pelvis', 'upperLegL', 'thigh_l', 1.00], ['upperLegL', 'lowerLegL', 'calf_l', 1.05], ['lowerLegL', 'footL', 'foot_l', 0.40],
+      ['pelvis', 'upperLegR', 'thigh_r', 1.00], ['upperLegR', 'lowerLegR', 'calf_r', 1.05], ['lowerLegR', 'footR', 'foot_r', 0.40],
+    ];
+    const proxyMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+    for (const d of defs) {
+      let shape, proxyGeo;
+      if (d.kind === 'sphere') { shape = new CANNON.Sphere(d.r); proxyGeo = new THREE.SphereGeometry(d.r, 12, 10); }
+      else { shape = new CANNON.Box(new CANNON.Vec3(d.he[0], d.he[1], d.he[2])); proxyGeo = new THREE.BoxGeometry(d.he[0] * 2, d.he[1] * 2, d.he[2] * 2); }
+      const body = new CANNON.Body({
+        mass: d.pinned ? 0 : d.mass, material: dummyMat,
+        position: new CANNON.Vec3(d.center.x, d.center.y, d.center.z),
+        quaternion: new CANNON.Quaternion(d.quat.x, d.quat.y, d.quat.z, d.quat.w),
+        linearDamping: 0.12, angularDamping: 0.35,
+        collisionFilterGroup: G_DUMMY, collisionFilterMask: G_GROUND,
+      });
+      body.addShape(shape); body.userData = { pinned: !!d.pinned, mass: d.mass };
+      world.addBody(body); bodies[d.name] = body;
+      restQuats[d.name] = new THREE.Quaternion(d.quat.x, d.quat.y, d.quat.z, d.quat.w);
+      restPos[d.name] = new CANNON.Vec3(d.center.x, d.center.y, d.center.z);
+      const pm = new THREE.Mesh(proxyGeo, proxyMat); pm.userData.bodyName = d.name;
+      scene.add(pm); proxByName[d.name] = pm; pickMeshes.push(pm);
+    }
+    for (const [aN, bN, pivotBone, cone] of JDEF) {
+      const A = bodies[aN], B = bodies[bN], pv = P(pivotBone), pivW = new CANNON.Vec3(pv.x, pv.y, pv.z);
+      const pa = A.pointToLocalFrame(pivW, new CANNON.Vec3()), pb = B.pointToLocalFrame(pivW, new CANNON.Vec3());
+      const c = new CANNON.PointToPointConstraint(A, pa, B, pb, 1e6); c.collideConnected = false;
+      world.addConstraint(c); jointByPivot[pivotBone] = { A, B, pa, pb };
+      const qA = new THREE.Quaternion(A.quaternion.x, A.quaternion.y, A.quaternion.z, A.quaternion.w);
+      const qB = new THREE.Quaternion(B.quaternion.x, B.quaternion.y, B.quaternion.z, B.quaternion.w);
+      jointLimits.push({ A, B, restRel: qA.clone().invert().multiply(qB), cone });
+    }
+
+    // aim-based bone driving setup
+    model.updateMatrixWorld(true);
+    rootBone = byn['root'] || skinned.skeleton.bones[0];
+    rootBone.parent.updateWorldMatrix(true, false);
+    rootParentWorld.copy(rootBone.parent.matrixWorld);
+    const pelvisBone = byn['pelvis']; pelvisBone.updateWorldMatrix(true, false);
+    const pelvisRest = new THREE.Matrix4().compose(new THREE.Vector3(bodies.pelvis.position.x, bodies.pelvis.position.y, bodies.pelvis.position.z), restQuats.pelvis, ONE);
+    rootDrive.bone = pelvisBone;
+    rootDrive.offset = new THREE.Matrix4().copy(pelvisRest).invert().multiply(pelvisBone.matrixWorld);
+    const srcBind = (s) => s.joint ? P(s.joint) : (() => { const b = bodies[s.body]; return new THREE.Vector3(b.position.x, b.position.y, b.position.z); })();
+    const AIM = [
+      ['spine_03', { joint: 'spine_01' }, { joint: 'neck_01' }], ['head', { joint: 'neck_01' }, { body: 'head' }],
+      ['upperarm_l', { joint: 'upperarm_l' }, { joint: 'lowerarm_l' }], ['lowerarm_l', { joint: 'lowerarm_l' }, { joint: 'hand_l' }], ['hand_l', { joint: 'hand_l' }, { body: 'handL' }],
+      ['upperarm_r', { joint: 'upperarm_r' }, { joint: 'lowerarm_r' }], ['lowerarm_r', { joint: 'lowerarm_r' }, { joint: 'hand_r' }], ['hand_r', { joint: 'hand_r' }, { body: 'handR' }],
+      ['thigh_l', { joint: 'thigh_l' }, { joint: 'calf_l' }], ['calf_l', { joint: 'calf_l' }, { joint: 'foot_l' }], ['foot_l', { joint: 'foot_l' }, { body: 'footL' }],
+      ['thigh_r', { joint: 'thigh_r' }, { joint: 'calf_r' }], ['calf_r', { joint: 'calf_r' }, { joint: 'foot_r' }], ['foot_r', { joint: 'foot_r' }, { body: 'footR' }],
+    ];
+    for (const [boneName, fromS, toS] of AIM) {
+      const bone = byn[boneName]; bone.updateWorldMatrix(true, false);
+      aims.push({ bone, from: fromS, to: toS, bindDir: srcBind(toS).sub(srcBind(fromS)).normalize(), bindQuat: new THREE.Quaternion().setFromRotationMatrix(bone.matrixWorld) });
+    }
+  }
+
+  // ---- one-sided ROM limits ----
+  const _qA = new THREE.Quaternion(), _qB = new THREE.Quaternion(), _rel = new THREE.Quaternion(), _delta = new THREE.Quaternion(), _axis = new THREE.Vector3();
+  function applyJointLimits() {
+    for (const j of jointLimits) {
+      const A = j.A, B = j.B;
+      _qA.set(A.quaternion.x, A.quaternion.y, A.quaternion.z, A.quaternion.w);
+      _qB.set(B.quaternion.x, B.quaternion.y, B.quaternion.z, B.quaternion.w);
+      _rel.copy(_qA).invert().multiply(_qB); _delta.copy(j.restRel).invert().multiply(_rel);
+      let w = _delta.w; if (w < 0) { _delta.x *= -1; _delta.y *= -1; _delta.z *= -1; w = -w; }
+      w = Math.min(1, Math.max(-1, w)); const angle = 2 * Math.acos(w);
+      if (angle <= j.cone) continue;
+      const s = Math.sqrt(1 - w * w); if (s < 1e-5) continue;
+      _axis.set(_delta.x / s, _delta.y / s, _delta.z / s).applyQuaternion(_qA);
+      const over = angle - j.cone;
+      const cur = (B.angularVelocity.x - A.angularVelocity.x) * _axis.x + (B.angularVelocity.y - A.angularVelocity.y) * _axis.y + (B.angularVelocity.z - A.angularVelocity.z) * _axis.z;
+      const corr = (-over * TUNE.limRate - cur) * TUNE.limBlend * 0.5;
+      B.angularVelocity.x += _axis.x * corr; B.angularVelocity.y += _axis.y * corr; B.angularVelocity.z += _axis.z * corr;
+      A.angularVelocity.x -= _axis.x * corr; A.angularVelocity.y -= _axis.y * corr; A.angularVelocity.z -= _axis.z * corr;
+    }
+  }
+
+  // ---- pose + linear velocity-servo "muscles" ----
+  const _cur = new THREE.Quaternion(), _errq = new THREE.Quaternion();
+  function applyPoseControllers() {
+    for (const [name, body] of Object.entries(bodies)) {
+      if (body.userData.pinned) continue;
+      _cur.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+      _errq.copy(restQuats[name]).multiply(_cur.invert());
+      if (_errq.w < 0) { _errq.x *= -1; _errq.y *= -1; _errq.z *= -1; _errq.w *= -1; }
+      const w = Math.min(1, Math.max(-1, _errq.w)), angle = 2 * Math.acos(w);
+      if (angle >= 1e-4) { const s = Math.sqrt(1 - w * w);
+        if (s >= 1e-5) { const ax = _errq.x / s, ay = _errq.y / s, az = _errq.z / s, cmd = Math.min(angle * TUNE.poseRate, TUNE.poseMaxW), av = body.angularVelocity;
+          av.x += (ax * cmd - av.x) * TUNE.poseBlend; av.y += (ay * cmd - av.y) * TUNE.poseBlend; av.z += (az * cmd - av.z) * TUNE.poseBlend; } }
+      const rp = restPos[name], cp = body.position, lv = body.velocity;
+      const ex = rp.x - cp.x, ey = rp.y - cp.y, ez = rp.z - cp.z, d = Math.sqrt(ex * ex + ey * ey + ez * ez);
+      if (d > 1e-4) { let vc = d * TUNE.linRate; if (vc > TUNE.linMaxV) vc = TUNE.linMaxV; const inv = vc / d;
+        lv.x += (ex * inv - lv.x) * TUNE.linBlend; lv.y += (ey * inv - lv.y) * TUNE.linBlend; lv.z += (ez * inv - lv.z) * TUNE.linBlend;
+      } else { lv.x += -lv.x * TUNE.linBlend; lv.y += -lv.y * TUNE.linBlend; lv.z += -lv.z * TUNE.linBlend; }
+    }
+  }
+
+  // ---- aim-based bone driving ----
+  const _ja = new CANNON.Vec3(), _jb = new CANNON.Vec3();
+  const jointWorld = (name, out) => { const j = jointByPivot[name]; j.A.pointToWorldFrame(j.pa, _ja); j.B.pointToWorldFrame(j.pb, _jb); return out.set((_ja.x + _jb.x) * 0.5, (_ja.y + _jb.y) * 0.5, (_ja.z + _jb.z) * 0.5); };
+  const srcWorld = (s, out) => { if (s.joint) return jointWorld(s.joint, out); const b = bodies[s.body]; return out.set(b.position.x, b.position.y, b.position.z); };
+  const _rootM = new THREE.Matrix4(), _rootV = new THREE.Vector3(), _rootQ = new THREE.Quaternion(), desiredRoot = new THREE.Matrix4(), aimQuat = {};
+  const _pF = new THREE.Vector3(), _pT = new THREE.Vector3(), _cd = new THREE.Vector3(), _swing = new THREE.Quaternion(), _pq = new THREE.Quaternion(), _lq = new THREE.Quaternion(), _cwm = new THREE.Matrix4();
+  function driveDFS(bone, parentWorld) {
+    let world;
+    if (bone === rootDrive.bone) { _cwm.copy(parentWorld).invert().multiply(desiredRoot); _cwm.decompose(bone.position, bone.quaternion, bone.scale); world = desiredRoot; }
+    else if (aimQuat[bone.name]) { _pq.setFromRotationMatrix(parentWorld); _lq.copy(_pq).invert().multiply(aimQuat[bone.name]); bone.quaternion.copy(_lq); bone.updateMatrix(); world = new THREE.Matrix4().multiplyMatrices(parentWorld, bone.matrix); }
+    else { bone.updateMatrix(); world = new THREE.Matrix4().multiplyMatrices(parentWorld, bone.matrix); }
+    const ch = bone.children; for (let i = 0; i < ch.length; i++) if (ch[i].isBone) driveDFS(ch[i], world);
+  }
+  function driveBones() {
+    const pb = bodies.pelvis;
+    _rootV.set(pb.position.x, pb.position.y, pb.position.z); _rootQ.set(pb.quaternion.x, pb.quaternion.y, pb.quaternion.z, pb.quaternion.w);
+    _rootM.compose(_rootV, _rootQ, ONE); desiredRoot.multiplyMatrices(_rootM, rootDrive.offset);
+    for (const a of aims) {
+      srcWorld(a.from, _pF); srcWorld(a.to, _pT); _cd.copy(_pT).sub(_pF);
+      if (_cd.lengthSq() < 1e-10) continue; _cd.normalize(); _swing.setFromUnitVectors(a.bindDir, _cd);
+      (aimQuat[a.bone.name] || (aimQuat[a.bone.name] = new THREE.Quaternion())).copy(_swing).multiply(a.bindQuat);
+    }
+    driveDFS(rootBone, rootParentWorld);
+  }
+
+  // ---- cursor → strike (window-level; canvas is pointer-events:none) ----
+  const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2(-2, -2);
+  let haveCursor = false, moveX = 0, moveY = 0, cursorSpeed = 0;
+  const IMPULSE_K = 0.16, SPEED_CLAMP = 90, SPIN = 2.8, SPIN_MAXW = 26;
+  window.addEventListener('mousemove', (e) => {
+    const r = renderer.domElement.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) { haveCursor = false; return; }
+    ndc.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    ndc.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+    moveX = e.movementX || 0; moveY = e.movementY || 0;
+    cursorSpeed = Math.sqrt(moveX * moveX + moveY * moveY); haveCursor = true;
+  }, { passive: true });
+
+  const _right = new THREE.Vector3(), _up = new THREE.Vector3();
+  function tryStrike() {
+    if (!haveCursor) return;
+    raycaster.setFromCamera(ndc, camera);
+    const hits = raycaster.intersectObjects(pickMeshes, false);
+    if (!hits.length) return;
+    if (cursorSpeed < 0.4) return;
+    const body = bodies[hits[0].object.userData.bodyName];
+    if (!body || body.userData.pinned) return;
+    _right.setFromMatrixColumn(camera.matrixWorld, 0); _up.setFromMatrixColumn(camera.matrixWorld, 1);
+    const dir = new THREE.Vector3().addScaledVector(_right, moveX).addScaledVector(_up, -moveY);
+    if (dir.lengthSq() < 1e-8) return; dir.normalize();
+    const mag = Math.min(cursorSpeed, SPEED_CLAMP) * IMPULSE_K;
+    const impulse = new CANNON.Vec3(dir.x * mag, dir.y * mag, dir.z * mag);
+    const rel = new CANNON.Vec3(hits[0].point.x - body.position.x, hits[0].point.y - body.position.y, hits[0].point.z - body.position.z);
+    body.applyImpulse(impulse, rel);
+    const dO = body.invInertiaWorld.vmult(rel.cross(impulse)), av = body.angularVelocity;
+    av.x += dO.x * SPIN; av.y += dO.y * SPIN; av.z += dO.z * SPIN;
+    const wl = Math.hypot(av.x, av.y, av.z); if (wl > SPIN_MAXW) { const k = SPIN_MAXW / wl; av.x *= k; av.y *= k; av.z *= k; }
+    moveX = 0; moveY = 0; cursorSpeed = 0;
+  }
+
+  // ---- loop ----
+  const clock = new THREE.Clock(), FIXED = 1 / 60; let acc = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    let dt = clock.getDelta(); if (dt > 0.1) dt = 0.1;
+    tryStrike();
+    acc += dt; let steps = 0;
+    while (acc >= FIXED && steps < 5) { applyPoseControllers(); applyJointLimits(); world.step(FIXED); acc -= FIXED; steps++; }
+    for (const name in proxByName) { const b = bodies[name], pm = proxByName[name]; pm.position.set(b.position.x, b.position.y, b.position.z); pm.quaternion.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w); }
+    driveBones();
+    renderer.render(scene, camera);
+  }
+}
 </script>
 </body>
 </html>

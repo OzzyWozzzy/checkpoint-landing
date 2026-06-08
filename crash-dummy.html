@@ -44,10 +44,16 @@
   #hud .bar > i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg,#57f5b5,#f7d046); transition: width .08s linear; }
   #hud .hint { margin-top: 11px; font-size: 9.5px; letter-spacing: .08em; color: #2f6b53; line-height: 1.5; }
   #peakflash { color: #f7d046 !important; }
+  #loading {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, monospace; color: #4f9e80; letter-spacing: .18em;
+    font-size: 12px; text-transform: uppercase; background: #fff; z-index: 20;
+  }
 </style>
 </head>
 <body>
 <div id="app"></div>
+<div id="loading">Loading crash-test dummy…</div>
 
 <div id="hud">
   <div class="title"><span class="dot"></span>Impact Telemetry</div>
@@ -63,6 +69,7 @@
 {
   "imports": {
     "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
     "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
   }
 }
@@ -71,12 +78,28 @@
 <script type="module">
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 /* ============================================================
    Crash Test Dummy — ragdoll impact simulation
-   Three.js render layer synced to a cannon-es physics ragdoll.
-   Active "muscle" PD controllers hold a neutral standing pose;
-   cursor sweeps cast a ray and punch impulses into body parts.
+   ------------------------------------------------------------
+   A textured, skinned crash-test-dummy model (UE4 mannequin
+   skeleton, converted from the source FBX to glTF) is driven by
+   a cannon-es physics ragdoll. The ragdoll is *built from the
+   model's own bind-pose skeleton*, so every physics joint sits
+   exactly on the corresponding model joint. Each frame the
+   model's bones are slaved to their physics body, so the mesh
+   deforms with the ragdoll.
+
+   Active "muscle" velocity-servos hold a neutral standing pose;
+   cursor sweeps cast a ray (against invisible per-body proxy
+   colliders) and punch impulses into body parts.
+
+   STABILITY INVARIANT (unchanged from the primitive version):
+   pose/limit restoration is done as *bounded velocity edits*,
+   never unbounded torque — that is what keeps it NaN-stable
+   across every segment inertia. Self-collision between limbs is
+   off (they collide only with the floor) for stability + 60fps.
    ============================================================ */
 
 // ---------------------------------------------------------------
@@ -88,6 +111,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 app.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -95,11 +119,11 @@ scene.background = new THREE.Color(0xffffff);
 scene.fog = new THREE.Fog(0xffffff, 9, 24);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-const camTarget = new THREE.Vector3(0, 1.05, 0);
+const camTarget = new THREE.Vector3(0, 0.92, 0);
 const camDir = new THREE.Vector3(0.5, 0.16, 1).normalize(); // 3/4 view
-// Frame the whole ~2.4m figure (with arm span) regardless of viewport aspect.
+// Frame the whole ~1.7m figure (with arm span) regardless of viewport aspect.
 function frameCamera() {
-  const H = 2.6, W = 1.5, margin = 1.12;
+  const H = 2.0, W = 1.4, margin = 1.12;
   const vfov = THREE.MathUtils.degToRad(camera.fov);
   const distH = (H * margin / 2) / Math.tan(vfov / 2);
   const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
@@ -114,17 +138,16 @@ frameCamera();
 // Lighting — soft ambient + one directional key light w/ shadows
 // ---------------------------------------------------------------
 scene.add(new THREE.HemisphereLight(0xffffff, 0xdfe3e8, 0.85));
-const ambient = new THREE.AmbientLight(0xffffff, 0.35);
-scene.add(ambient);
+scene.add(new THREE.AmbientLight(0xffffff, 0.30));
 
-const key = new THREE.DirectionalLight(0xffffff, 1.55);
+const key = new THREE.DirectionalLight(0xffffff, 2.2);
 key.position.set(4.5, 8.5, 5.0);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
 key.shadow.camera.near = 1;
 key.shadow.camera.far = 25;
-key.shadow.camera.left = -4; key.shadow.camera.right = 4;
-key.shadow.camera.top = 5;  key.shadow.camera.bottom = -1;
+key.shadow.camera.left = -3; key.shadow.camera.right = 3;
+key.shadow.camera.top = 4;  key.shadow.camera.bottom = -1;
 key.shadow.bias = -0.0004;
 key.shadow.radius = 4;
 scene.add(key);
@@ -145,26 +168,6 @@ grid.position.y = 0.002;
 scene.add(grid);
 
 // ---------------------------------------------------------------
-// Toon gradient map for flat / industrial shading
-// ---------------------------------------------------------------
-function makeToonGradient(stops) {
-  const data = new Uint8Array(stops);
-  const tex = new THREE.DataTexture(data, stops.length, 1, THREE.RedFormat);
-  tex.needsUpdate = true;
-  tex.minFilter = THREE.NearestFilter;
-  tex.magFilter = THREE.NearestFilter;
-  return tex;
-}
-const toonRamp = makeToonGradient([90, 150, 205, 245]);
-
-const GLOW = new THREE.Color(0x35d6ff);
-function bodyMaterial() {
-  return new THREE.MeshToonMaterial({ color: 0x9b9ea3, gradientMap: toonRamp, emissive: GLOW, emissiveIntensity: 0 });
-}
-const blackMat = new THREE.MeshToonMaterial({ color: 0x14161a, gradientMap: toonRamp });
-const yellowMat = new THREE.MeshToonMaterial({ color: 0xf7d046, gradientMap: toonRamp });
-
-// ---------------------------------------------------------------
 // Physics world
 // ---------------------------------------------------------------
 const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
@@ -180,181 +183,285 @@ const groundBody = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), collisi
 groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
 world.addBody(groundBody);
 
-// (feet are pinned simply by being static bodies — see build loop)
-
-// ---------------------------------------------------------------
-// Dummy definition — every segment is a primitive with mass
-// ---------------------------------------------------------------
-const ARM_X = 0.30, LEG_X = 0.11;
-const PARTS = {
-  pelvis:    { kind: 'box', he: [0.17, 0.12, 0.12], pos: [0, 1.28, 0], mass: 12 },
-  chest:     { kind: 'box', he: [0.19, 0.20, 0.13], pos: [0, 1.62, 0], mass: 16 },
-  head:      { kind: 'sphere', r: 0.16, scaleY: 1.28, pos: [0, 2.05, 0], mass: 5 },
-
-  upperArmL: { kind: 'cyl', r: 0.062, h: 0.46, pos: [ ARM_X, 1.58, 0], mass: 3 },
-  lowerArmL: { kind: 'cyl', r: 0.055, h: 0.42, pos: [ ARM_X, 1.12, 0], mass: 2 },
-  handL:     { kind: 'box', he: [0.06, 0.07, 0.04], pos: [ ARM_X, 0.84, 0], mass: 0.6 },
-  upperArmR: { kind: 'cyl', r: 0.062, h: 0.46, pos: [-ARM_X, 1.58, 0], mass: 3 },
-  lowerArmR: { kind: 'cyl', r: 0.055, h: 0.42, pos: [-ARM_X, 1.12, 0], mass: 2 },
-  handR:     { kind: 'box', he: [0.06, 0.07, 0.04], pos: [-ARM_X, 0.84, 0], mass: 0.6 },
-
-  upperLegL: { kind: 'cyl', r: 0.095, h: 0.46, pos: [ LEG_X, 0.92, 0], mass: 7 },
-  lowerLegL: { kind: 'cyl', r: 0.072, h: 0.54, pos: [ LEG_X, 0.40, 0], mass: 5 },
-  footL:     { kind: 'box', he: [0.09, 0.06, 0.17], pos: [ LEG_X, 0.06, 0.05], mass: 1, pinned: true },
-  upperLegR: { kind: 'cyl', r: 0.095, h: 0.46, pos: [-LEG_X, 0.92, 0], mass: 7 },
-  lowerLegR: { kind: 'cyl', r: 0.072, h: 0.54, pos: [-LEG_X, 0.40, 0], mass: 5 },
-  footR:     { kind: 'box', he: [0.09, 0.06, 0.17], pos: [-LEG_X, 0.06, 0.05], mass: 1, pinned: true },
-};
-
-// joint: [bodyA, bodyB, worldPivot, coneAngle, twistAngle]
-const JOINTS = [
-  ['pelvis', 'chest',     [0, 1.42, 0],      0.40, 0.35],   // spine
-  ['chest',  'head',      [0, 1.87, 0],      0.55, 0.45],   // neck
-  ['chest',  'upperArmL', [ ARM_X, 1.80, 0], 1.30, 0.65],   // shoulder
-  ['upperArmL','lowerArmL',[ ARM_X, 1.34, 0],1.15, 0.30],   // elbow
-  ['lowerArmL','handL',   [ ARM_X, 0.92, 0], 0.50, 0.30],   // wrist
-  ['chest',  'upperArmR', [-ARM_X, 1.80, 0], 1.30, 0.65],
-  ['upperArmR','lowerArmR',[-ARM_X, 1.34, 0],1.15, 0.30],
-  ['lowerArmR','handR',   [-ARM_X, 0.92, 0], 0.50, 0.30],
-  ['pelvis', 'upperLegL', [ LEG_X, 1.15, 0], 1.00, 0.40],   // hip
-  ['upperLegL','lowerLegL',[ LEG_X, 0.67, 0],1.05, 0.25],   // knee
-  ['lowerLegL','footL',   [ LEG_X, 0.13, 0], 0.40, 0.25],   // ankle
-  ['pelvis', 'upperLegR', [-LEG_X, 1.15, 0], 1.00, 0.40],
-  ['upperLegR','lowerLegR',[-LEG_X, 0.67, 0],1.05, 0.25],
-  ['lowerLegR','footR',   [-LEG_X, 0.13, 0], 0.40, 0.25],
-];
-
 const dummyMat = new CANNON.Material('dummy');
-const contact = new CANNON.ContactMaterial(dummyMat, dummyMat, { friction: 0.55, restitution: 0.05 });
-world.addContactMaterial(contact);
-const groundContact = new CANNON.ContactMaterial(dummyMat, dummyMat, { friction: 0.8, restitution: 0.0 });
-world.addContactMaterial(groundContact);
+world.addContactMaterial(new CANNON.ContactMaterial(dummyMat, dummyMat, { friction: 0.6, restitution: 0.04 }));
 
 // ---------------------------------------------------------------
-// Build bodies + visual groups
+// Shared simulation state (filled in by build(), below, once the
+// model has loaded and we know the skeleton's bind-pose joints)
 // ---------------------------------------------------------------
-const bodies = {};   // name -> CANNON.Body
-const visuals = {};  // name -> THREE.Group (synced to body)
-const pickMeshes = []; // meshes used for raycasting (carry .userData.bodyName)
-const restQuats = {}; // name -> THREE.Quaternion (neutral pose target)
-const restPos = {};   // name -> CANNON.Vec3 (neutral standing position)
-
-function addStripe(group, axisLen, radius, y) {
-  // a bold black painted band around a limb
-  const ring = new THREE.Mesh(new THREE.CylinderGeometry(radius * 1.06, radius * 1.06, 0.05, 20), blackMat);
-  ring.position.y = y;
-  ring.castShadow = true;
-  group.add(ring);
-}
-function addJointRing(group, radius, y) {
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(radius * 0.98, radius * 0.34, 10, 20), blackMat);
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = y;
-  ring.castShadow = true;
-  group.add(ring);
-}
-
-for (const [name, p] of Object.entries(PARTS)) {
-  // ---- physics shape ----
-  let shape, mesh;
-  const mat = bodyMaterial();
-  const group = new THREE.Group();
-
-  if (p.kind === 'box') {
-    shape = new CANNON.Box(new CANNON.Vec3(p.he[0], p.he[1], p.he[2]));
-    mesh = new THREE.Mesh(new THREE.BoxGeometry(p.he[0] * 2, p.he[1] * 2, p.he[2] * 2), mat);
-  } else if (p.kind === 'sphere') {
-    shape = new CANNON.Sphere(p.r);
-    mesh = new THREE.Mesh(new THREE.SphereGeometry(p.r, 28, 22), mat);
-    if (p.scaleY) mesh.scale.y = p.scaleY; // ovoid head
-  } else { // cylinder visual, box collider (stable inertia + contacts)
-    shape = new CANNON.Box(new CANNON.Vec3(p.r, p.h / 2, p.r));
-    mesh = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r, p.h, 22), mat);
-  }
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  mesh.userData.bodyName = name;
-  mesh.userData.baseMat = mat;
-  group.add(mesh);
-  pickMeshes.push(mesh);
-
-  // decorative joint rings / stripes
-  if (p.kind === 'cyl') {
-    addJointRing(group, p.r, p.h / 2);
-    addJointRing(group, p.r, -p.h / 2);
-    if (name.startsWith('upper')) addStripe(group, p.h, p.r, 0);
-  }
-  if (name === 'chest') {
-    // bold torso stripes
-    for (const yy of [0.06, -0.06]) {
-      const s = new THREE.Mesh(new THREE.BoxGeometry(p.he[0] * 2 + 0.005, 0.05, p.he[2] * 2 + 0.005), blackMat);
-      s.position.y = yy; s.castShadow = true; group.add(s);
-    }
-    // chest hazard chevron
-    const chev = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, p.he[2] * 2 + 0.01), yellowMat);
-    chev.position.set(0, -0.005, 0); chev.castShadow = true; group.add(chev);
-  }
-  if (name === 'pelvis') {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(p.he[0] * 2 + 0.005, 0.05, p.he[2] * 2 + 0.005), blackMat);
-    s.castShadow = true; group.add(s);
-  }
-  if (name === 'head') {
-    const band = new THREE.Mesh(new THREE.TorusGeometry(p.r * 0.92, p.r * 0.12, 10, 28), blackMat);
-    band.rotation.x = Math.PI / 2; band.position.y = -0.02; band.scale.y = (p.scaleY||1);
-    group.add(band);
-  }
-
-  scene.add(group);
-  visuals[name] = group;
-
-  // ---- physics body ----
-  const body = new CANNON.Body({
-    mass: p.pinned ? 0 : p.mass,   // pinned feet = static bodies
-    material: dummyMat,
-    position: new CANNON.Vec3(p.pos[0], p.pos[1], p.pos[2]),
-    linearDamping: 0.12,
-    angularDamping: 0.35,
-    collisionFilterGroup: G_DUMMY,
-    collisionFilterMask: G_GROUND, // self-collision off for stability + 60fps
-  });
-  body.addShape(shape);
-  body.userData = { pinned: !!p.pinned, mass: p.mass };
-  world.addBody(body);
-  bodies[name] = body;
-  restQuats[name] = new THREE.Quaternion(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
-  restPos[name] = new CANNON.Vec3(body.position.x, body.position.y, body.position.z);
-}
-
-// ---------------------------------------------------------------
-// Joints — PointToPoint ball joint holds segments together (very
-// stable, NaN-safe). Range-of-motion limits are enforced as
-// one-sided angular springs in applyJointLimits(): the joint moves
-// freely inside its cone and resists beyond it.
-// ---------------------------------------------------------------
+const bodies = {};      // name -> CANNON.Body
+const restQuats = {};   // name -> THREE.Quaternion (neutral pose target)
+const restPos = {};     // name -> CANNON.Vec3 (neutral standing position)
+const proxByName = {};  // name -> THREE.Mesh (invisible collider proxy, synced to body)
+const pickMeshes = [];  // proxy meshes used for raycasting (carry .userData.bodyName)
 const jointLimits = []; // { A, B, restRel:THREE.Quaternion, cone }
-for (const [aName, bName, pivot, cone, twist] of JOINTS) {
-  const A = bodies[aName], B = bodies[bName];
-  const pivotA = new CANNON.Vec3(pivot[0] - A.position.x, pivot[1] - A.position.y, pivot[2] - A.position.z);
-  const pivotB = new CANNON.Vec3(pivot[0] - B.position.x, pivot[1] - B.position.y, pivot[2] - B.position.z);
-  const c = new CANNON.PointToPointConstraint(A, pivotA, B, pivotB, 1e6);
-  c.collideConnected = false;
-  world.addConstraint(c);
+const jointByPivot = {}; // pivot bone name -> { A, B, pa:CANNON.Vec3(local), pb:CANNON.Vec3(local) }
+const aims = [];        // aim-driving entries (see build()/driveBones)
+const rootDrive = {};   // { bone, offset:Matrix4 } for the pelvis root bone
+let rootBone = null, rootParentWorld = new THREE.Matrix4();
+let started = false;
 
-  // rest relative rotation of B in A's frame (identity here, but store generally)
-  const qA = new THREE.Quaternion(A.quaternion.x, A.quaternion.y, A.quaternion.z, A.quaternion.w);
-  const qB = new THREE.Quaternion(B.quaternion.x, B.quaternion.y, B.quaternion.z, B.quaternion.w);
-  const restRel = qA.clone().invert().multiply(qB);
-  jointLimits.push({ A, B, restRel, cone });
+// ---------------------------------------------------------------
+// Load the model, wire up its PBR textures, then build the ragdoll
+// from its bind skeleton.
+// ---------------------------------------------------------------
+const MODEL_URL = 'crash-dummy/crush_dummy.glb';
+const TEX_BASE  = 'crash-dummy/textures/crush_dummy_default_';
+
+new GLTFLoader().load(MODEL_URL, (gltf) => {
+  const model = gltf.scene;
+  scene.add(model);
+
+  const skinned = model.getObjectByProperty('isSkinnedMesh', true);
+  skinned.castShadow = true;
+  skinned.receiveShadow = true;
+  skinned.frustumCulled = false; // bones leave the original bounds once it ragdolls
+
+  // ---- PBR textures (the GLB shipped without usable maps) ----
+  const tl = new THREE.TextureLoader();
+  function tex(name, srgb) {
+    const t = tl.load(TEX_BASE + name);
+    t.flipY = false;                 // glTF UV convention
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
+  const mat = Array.isArray(skinned.material) ? skinned.material[0] : skinned.material;
+  mat.map          = tex('BaseColor.tga.png', true);
+  mat.normalMap    = tex('Normal.tga.png', false);
+  mat.roughnessMap = tex('Roughness.tga.png', false); mat.roughness = 1.0;
+  mat.metalnessMap = tex('Metallic.tga.png', false);  mat.metalness = 1.0;
+  mat.aoMap        = tex('Occlusion.tga.png', false);
+  mat.emissiveMap  = tex('Emissive.tga.png', true);   mat.emissive = new THREE.Color(0xffffff); mat.emissiveIntensity = 1.0;
+  mat.needsUpdate = true;
+  // aoMap samples the 2nd UV set in three; reuse the primary UVs.
+  const geo = skinned.geometry;
+  if (geo.attributes.uv && !geo.attributes.uv2) geo.setAttribute('uv2', geo.attributes.uv);
+
+  build(model, skinned);
+
+  document.getElementById('loading').remove();
+  started = true;
+  animate();
+}, undefined, (err) => {
+  document.getElementById('loading').textContent = 'Failed to load model — see console';
+  console.error('Model load failed:', err);
+});
+
+// ---------------------------------------------------------------
+// Build the ragdoll from the model's bind-pose skeleton
+// ---------------------------------------------------------------
+const ONE = new THREE.Vector3(1, 1, 1);
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+
+function build(model, skinned) {
+  model.updateMatrixWorld(true);
+  const boneByName = {};
+  skinned.skeleton.bones.forEach((b) => { boneByName[b.name] = b; });
+  rootBone = boneByName['root'] || skinned.skeleton.bones[0];
+  rootBone.parent.updateWorldMatrix(true, false);
+  rootParentWorld.copy(rootBone.parent.matrixWorld);
+
+  const P = (n) => boneByName[n].getWorldPosition(new THREE.Vector3());
+  const quatAlong = (dir) => new THREE.Quaternion().setFromUnitVectors(Y_AXIS, dir.clone().normalize());
+
+  // Each def: physics body + which model bone it drives.
+  // Limb bodies are boxes whose local +Y runs down the segment between
+  // its two joints; torso/head are placed explicitly.
+  const defs = [];
+  const limb = (name, bone, a, b, r, mass) => {
+    const c = a.clone().add(b).multiplyScalar(0.5);
+    const d = b.clone().sub(a);
+    defs.push({ name, bone, kind: 'box', he: [r, d.length() / 2, r], center: c, quat: quatAlong(d), mass });
+  };
+  const handBody = (name, bone, wrist, fromElbow, mass) => {
+    const d = wrist.clone().sub(fromElbow);
+    const c = wrist.clone().add(d.clone().normalize().multiplyScalar(0.05));
+    defs.push({ name, bone, kind: 'box', he: [0.05, 0.06, 0.03], center: c, quat: quatAlong(d), mass });
+  };
+
+  // --- torso / head ---
+  defs.push({ name: 'pelvis', bone: 'pelvis', kind: 'box', he: [0.135, 0.11, 0.115],
+              center: P('pelvis').add(new THREE.Vector3(0, 0.02, 0)), quat: new THREE.Quaternion(), mass: 12 });
+  {
+    const a = P('spine_01'), b = P('neck_01');
+    const c = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
+    defs.push({ name: 'chest', bone: 'spine_03', kind: 'box', he: [0.17, d.length() / 2, 0.12],
+                center: c, quat: quatAlong(d), mass: 16 });
+  }
+  defs.push({ name: 'head', bone: 'head', kind: 'sphere', r: 0.12,
+              center: P('head').add(new THREE.Vector3(0, 0.07, 0)), quat: new THREE.Quaternion(), mass: 5 });
+
+  // --- arms ---
+  limb('upperArmL', 'upperarm_l', P('upperarm_l'), P('lowerarm_l'), 0.050, 3);
+  limb('lowerArmL', 'lowerarm_l', P('lowerarm_l'), P('hand_l'),     0.045, 2);
+  handBody('handL', 'hand_l', P('hand_l'), P('lowerarm_l'), 0.6);
+  limb('upperArmR', 'upperarm_r', P('upperarm_r'), P('lowerarm_r'), 0.050, 3);
+  limb('lowerArmR', 'lowerarm_r', P('lowerarm_r'), P('hand_r'),     0.045, 2);
+  handBody('handR', 'hand_r', P('hand_r'), P('lowerarm_r'), 0.6);
+
+  // --- legs (feet pinned = static anchors) ---
+  limb('upperLegL', 'thigh_l', P('thigh_l'), P('calf_l'), 0.085, 7);
+  limb('lowerLegL', 'calf_l',  P('calf_l'),  P('foot_l'), 0.065, 5);
+  {
+    const a = P('foot_l'), b = P('ball_l');
+    const c = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
+    defs.push({ name: 'footL', bone: 'foot_l', kind: 'box', he: [0.06, 0.05, 0.10], center: c, quat: quatAlong(d), mass: 1, pinned: true });
+  }
+  limb('upperLegR', 'thigh_r', P('thigh_r'), P('calf_r'), 0.085, 7);
+  limb('lowerLegR', 'calf_r',  P('calf_r'),  P('foot_r'), 0.065, 5);
+  {
+    const a = P('foot_r'), b = P('ball_r');
+    const c = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
+    defs.push({ name: 'footR', bone: 'foot_r', kind: 'box', he: [0.06, 0.05, 0.10], center: c, quat: quatAlong(d), mass: 1, pinned: true });
+  }
+
+  // joints: [bodyA, bodyB, pivotBone, coneAngle, twistAngle]
+  const JDEF = [
+    ['pelvis', 'chest',      'spine_01',   0.40, 0.35], // spine
+    ['chest',  'head',       'neck_01',    0.55, 0.45], // neck
+    ['chest',  'upperArmL',  'upperarm_l', 1.30, 0.65], // shoulder
+    ['upperArmL', 'lowerArmL', 'lowerarm_l', 1.15, 0.30], // elbow
+    ['lowerArmL', 'handL',   'hand_l',     0.50, 0.30], // wrist
+    ['chest',  'upperArmR',  'upperarm_r', 1.30, 0.65],
+    ['upperArmR', 'lowerArmR', 'lowerarm_r', 1.15, 0.30],
+    ['lowerArmR', 'handR',   'hand_r',     0.50, 0.30],
+    ['pelvis', 'upperLegL',  'thigh_l',    1.00, 0.40], // hip
+    ['upperLegL', 'lowerLegL', 'calf_l',   1.05, 0.25], // knee
+    ['lowerLegL', 'footL',   'foot_l',     0.40, 0.25], // ankle
+    ['pelvis', 'upperLegR',  'thigh_r',    1.00, 0.40],
+    ['upperLegR', 'lowerLegR', 'calf_r',   1.05, 0.25],
+    ['lowerLegR', 'footR',   'foot_r',     0.40, 0.25],
+  ];
+
+  // invisible-but-raycastable proxy material (geometry-based picking
+  // ignores material opacity, so opacity:0 hides it yet still hits)
+  const proxyMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+
+  for (const d of defs) {
+    let shape, proxyGeo;
+    if (d.kind === 'sphere') {
+      shape = new CANNON.Sphere(d.r);
+      proxyGeo = new THREE.SphereGeometry(d.r, 14, 12);
+    } else {
+      shape = new CANNON.Box(new CANNON.Vec3(d.he[0], d.he[1], d.he[2]));
+      proxyGeo = new THREE.BoxGeometry(d.he[0] * 2, d.he[1] * 2, d.he[2] * 2);
+    }
+    const body = new CANNON.Body({
+      mass: d.pinned ? 0 : d.mass,
+      material: dummyMat,
+      position: new CANNON.Vec3(d.center.x, d.center.y, d.center.z),
+      quaternion: new CANNON.Quaternion(d.quat.x, d.quat.y, d.quat.z, d.quat.w),
+      linearDamping: 0.12,
+      angularDamping: 0.35,
+      collisionFilterGroup: G_DUMMY,
+      collisionFilterMask: G_GROUND, // self-collision off for stability + 60fps
+    });
+    body.addShape(shape);
+    body.userData = { pinned: !!d.pinned, mass: d.mass };
+    world.addBody(body);
+    bodies[d.name] = body;
+    restQuats[d.name] = new THREE.Quaternion(d.quat.x, d.quat.y, d.quat.z, d.quat.w);
+    restPos[d.name] = new CANNON.Vec3(d.center.x, d.center.y, d.center.z);
+
+    const pm = new THREE.Mesh(proxyGeo, proxyMat);
+    pm.userData.bodyName = d.name;
+    scene.add(pm);
+    proxByName[d.name] = pm;
+    pickMeshes.push(pm);
+
+  }
+
+  // Joints — PointToPoint ball joints. Pivots must be expressed in each
+  // body's LOCAL frame; since bodies carry a non-identity rest orientation
+  // we derive them with pointToLocalFrame (a bare world offset would be
+  // wrong and would misplace the joint). ROM limits are one-sided angular
+  // springs in applyJointLimits(): free inside the cone, resisting beyond.
+  for (const [aName, bName, pivotBone, cone] of JDEF) {
+    const A = bodies[aName], B = bodies[bName];
+    const pv = P(pivotBone);
+    const pivW = new CANNON.Vec3(pv.x, pv.y, pv.z);
+    const pa = A.pointToLocalFrame(pivW, new CANNON.Vec3());
+    const pb = B.pointToLocalFrame(pivW, new CANNON.Vec3());
+    const c = new CANNON.PointToPointConstraint(A, pa, B, pb, 1e6);
+    c.collideConnected = false;
+    world.addConstraint(c);
+    jointByPivot[pivotBone] = { A, B, pa, pb };
+
+    const qA = new THREE.Quaternion(A.quaternion.x, A.quaternion.y, A.quaternion.z, A.quaternion.w);
+    const qB = new THREE.Quaternion(B.quaternion.x, B.quaternion.y, B.quaternion.z, B.quaternion.w);
+    jointLimits.push({ A, B, restRel: qA.clone().invert().multiply(qB), cone });
+  }
+
+  // ---- Bone-driving setup (aim-based, position-sourced) ----
+  // The pelvis (root) is driven rigidly from the pelvis body. Every other
+  // bone is AIMED: rotate its bind orientation by the minimal swing that
+  // carries its bind segment direction onto its current segment direction,
+  // where directions come from physics JOINT positions. The constraints pin
+  // those joint points in world space no matter how a body spins, so this is
+  // immune to the free-twist/flip that wrecked an orientation-copy approach.
+  // Minimal-swing introduces no roll → the skinned mesh never corkscrews.
+  model.updateMatrixWorld(true);
+  rootBone = boneByName['root'] || skinned.skeleton.bones[0];
+  rootBone.parent.updateWorldMatrix(true, false);
+  rootParentWorld.copy(rootBone.parent.matrixWorld);
+
+  const pelvisBone = boneByName['pelvis'];
+  pelvisBone.updateWorldMatrix(true, false);
+  const pelvisRest = new THREE.Matrix4().compose(
+    new THREE.Vector3(bodies.pelvis.position.x, bodies.pelvis.position.y, bodies.pelvis.position.z),
+    restQuats.pelvis, ONE);
+  rootDrive.bone = pelvisBone;
+  rootDrive.offset = new THREE.Matrix4().copy(pelvisRest).invert().multiply(pelvisBone.matrixWorld);
+
+  // a direction endpoint: a joint pivot (preferred, stable) or a body centre
+  const srcBind = (spec) => spec.joint ? P(spec.joint)
+    : (() => { const b = bodies[spec.body]; return new THREE.Vector3(b.position.x, b.position.y, b.position.z); })();
+  // [bone, fromPoint, toPoint]  (segment direction = from → to)
+  const AIM = [
+    ['spine_03', { joint: 'spine_01' }, { joint: 'neck_01' }],
+    ['head',     { joint: 'neck_01' },  { body: 'head' }],
+    ['upperarm_l', { joint: 'upperarm_l' }, { joint: 'lowerarm_l' }],
+    ['lowerarm_l', { joint: 'lowerarm_l' }, { joint: 'hand_l' }],
+    ['hand_l',     { joint: 'hand_l' },     { body: 'handL' }],
+    ['upperarm_r', { joint: 'upperarm_r' }, { joint: 'lowerarm_r' }],
+    ['lowerarm_r', { joint: 'lowerarm_r' }, { joint: 'hand_r' }],
+    ['hand_r',     { joint: 'hand_r' },     { body: 'handR' }],
+    ['thigh_l', { joint: 'thigh_l' }, { joint: 'calf_l' }],
+    ['calf_l',  { joint: 'calf_l' },  { joint: 'foot_l' }],
+    ['foot_l',  { joint: 'foot_l' },  { body: 'footL' }],
+    ['thigh_r', { joint: 'thigh_r' }, { joint: 'calf_r' }],
+    ['calf_r',  { joint: 'calf_r' },  { joint: 'foot_r' }],
+    ['foot_r',  { joint: 'foot_r' },  { body: 'footR' }],
+  ];
+  for (const [boneName, fromS, toS] of AIM) {
+    const bone = boneByName[boneName];
+    bone.updateWorldMatrix(true, false);
+    const bindQuat = new THREE.Quaternion().setFromRotationMatrix(bone.matrixWorld);
+    const bindDir = srcBind(toS).sub(srcBind(fromS)).normalize();
+    aims.push({ bone, from: fromS, to: toS, bindDir, bindQuat });
+  }
 }
 
-// One-sided ROM limit via bounded relative-velocity correction: inside
-// the cone the joint is free; past it we drive the *relative* angular
-// velocity inward (and brake outward motion), split between both bodies.
+// ---------------------------------------------------------------
+// One-sided ROM limit via bounded relative-velocity correction:
+// inside the cone the joint is free; past it we drive the relative
+// angular velocity inward (and brake outward motion), split evenly.
+// ---------------------------------------------------------------
 const _qA = new THREE.Quaternion(), _qB = new THREE.Quaternion();
 const _rel = new THREE.Quaternion(), _delta = new THREE.Quaternion();
 const _axis = new THREE.Vector3();
-const LIM_RATE = 9.0;    // commanded inward rad/s per rad past the limit
-const LIM_BLEND = 0.5;   // how aggressively we pull back toward the cone
+// Tunable gains (grouped so they can be swept live via window.__sim.TUNE).
+const TUNE = {
+  limRate: 9.0,    // commanded inward rad/s per rad past a joint limit
+  limBlend: 0.5,   // how aggressively we pull back toward the cone
+  poseRate: 14.0,  // commanded rad/s per rad of orientation error
+  poseMaxW: 20.0,  // cap on commanded angular rate
+  poseBlend: 0.45, // fraction of the angular gap closed per substep
+  linRate: 12.0,   // commanded m/s per metre of offset
+  linMaxV: 9.0,    // cap on commanded linear speed
+  linBlend: 0.3,   // fraction of the linear-velocity gap closed per substep
+};
 function applyJointLimits() {
   for (const j of jointLimits) {
     const A = j.A, B = j.B;
@@ -374,79 +481,142 @@ function applyJointLimits() {
     _axis.applyQuaternion(_qA);                          // → world (+axis = "further out")
 
     const over = angle - j.cone;
-    // current relative angular velocity along the outward axis
     const curAlong =
       (B.angularVelocity.x - A.angularVelocity.x) * _axis.x +
       (B.angularVelocity.y - A.angularVelocity.y) * _axis.y +
       (B.angularVelocity.z - A.angularVelocity.z) * _axis.z;
-    const desiredAlong = -over * LIM_RATE;            // command inward motion
-    const corr = (desiredAlong - curAlong) * LIM_BLEND * 0.5; // half to each body
+    const desiredAlong = -over * TUNE.limRate;        // command inward motion
+    const corr = (desiredAlong - curAlong) * TUNE.limBlend * 0.5; // half to each body
     B.angularVelocity.x += _axis.x * corr; B.angularVelocity.y += _axis.y * corr; B.angularVelocity.z += _axis.z * corr;
     A.angularVelocity.x -= _axis.x * corr; A.angularVelocity.y -= _axis.y * corr; A.angularVelocity.z -= _axis.z * corr;
   }
 }
 
 // ---------------------------------------------------------------
-// Active "muscle" PD controllers — restore neutral standing pose.
-// Torque toward each segment's rest world-orientation, damped by
-// angular velocity. Gains scale with mass; intentionally modest so
-// gravity can hold the dummy slumped once it's knocked over.
+// Active "muscle" velocity-servos — restore the neutral standing
+// pose. Each substep we nudge a segment's angular *and* linear
+// velocity toward the rotation/position that restores its neutral
+// state, with capped command rates and a soft blend. Bounded
+// velocity edits = unconditionally stable regardless of inertia.
 // ---------------------------------------------------------------
-// Velocity-servo "muscles": each substep we nudge a segment's angular
-// velocity toward the rotation that restores its neutral orientation,
-// with a capped command rate and a soft blend. Bounded velocity edits =
-// unconditionally stable regardless of a segment's inertia (the tiny
-// hands no longer blow up the way a stiff torque-PD did).
-const POSE_RATE = 14.0;   // commanded rad/s per rad of orientation error
-const POSE_MAXW = 20.0;   // cap on commanded angular rate
-const POSE_BLEND = 0.48;  // fraction of the gap closed per substep
-// linear (positional) restoration — holds the standing silhouette softly
-const LIN_RATE = 9.0;     // commanded m/s per metre of offset
-const LIN_MAXV = 7.0;     // cap on commanded linear speed
-const LIN_BLEND = 0.28;   // fraction of the velocity gap closed per substep
 const _cur = new THREE.Quaternion();
 const _errq = new THREE.Quaternion();
 function applyPoseControllers() {
   for (const [name, body] of Object.entries(bodies)) {
     if (body.userData.pinned) continue;
     _cur.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
-    // error rotation (world): rest * cur^-1 maps current -> neutral
-    _errq.copy(restQuats[name]).multiply(_cur.invert());
+    _errq.copy(restQuats[name]).multiply(_cur.invert()); // rest * cur^-1 maps current -> neutral
     if (_errq.w < 0) { _errq.x *= -1; _errq.y *= -1; _errq.z *= -1; _errq.w *= -1; }
     const w = Math.min(1, Math.max(-1, _errq.w));
     const angle = 2 * Math.acos(w);
-    if (angle < 1e-4) { continue; }
-    const s = Math.sqrt(1 - w * w);
-    if (s < 1e-5) continue;
-    const ax = _errq.x / s, ay = _errq.y / s, az = _errq.z / s;
-
-    const cmd = Math.min(angle * POSE_RATE, POSE_MAXW);
-    const av = body.angularVelocity;
-    av.x += (ax * cmd - av.x) * POSE_BLEND;
-    av.y += (ay * cmd - av.y) * POSE_BLEND;
-    av.z += (az * cmd - av.z) * POSE_BLEND;
+    if (angle >= 1e-4) {
+      const s = Math.sqrt(1 - w * w);
+      if (s >= 1e-5) {
+        const ax = _errq.x / s, ay = _errq.y / s, az = _errq.z / s;
+        const cmd = Math.min(angle * TUNE.poseRate, TUNE.poseMaxW);
+        const av = body.angularVelocity;
+        av.x += (ax * cmd - av.x) * TUNE.poseBlend;
+        av.y += (ay * cmd - av.y) * TUNE.poseBlend;
+        av.z += (az * cmd - av.z) * TUNE.poseBlend;
+      }
+    }
 
     // --- linear servo: softly hold the standing silhouette ---
     const rp = restPos[name], cp = body.position, lv = body.velocity;
-    let ex = rp.x - cp.x, ey = rp.y - cp.y, ez = rp.z - cp.z;
+    const ex = rp.x - cp.x, ey = rp.y - cp.y, ez = rp.z - cp.z;
     const d = Math.sqrt(ex * ex + ey * ey + ez * ez);
     if (d > 1e-4) {
-      let vcmd = d * LIN_RATE;
-      if (vcmd > LIN_MAXV) vcmd = LIN_MAXV;
+      let vcmd = d * TUNE.linRate;
+      if (vcmd > TUNE.linMaxV) vcmd = TUNE.linMaxV;
       const inv = vcmd / d;
-      lv.x += (ex * inv - lv.x) * LIN_BLEND;
-      lv.y += (ey * inv - lv.y) * LIN_BLEND;
-      lv.z += (ez * inv - lv.z) * LIN_BLEND;
+      lv.x += (ex * inv - lv.x) * TUNE.linBlend;
+      lv.y += (ey * inv - lv.y) * TUNE.linBlend;
+      lv.z += (ez * inv - lv.z) * TUNE.linBlend;
     } else {
-      lv.x += (0 - lv.x) * LIN_BLEND;
-      lv.y += (0 - lv.y) * LIN_BLEND;
-      lv.z += (0 - lv.z) * LIN_BLEND;
+      lv.x += (0 - lv.x) * TUNE.linBlend;
+      lv.y += (0 - lv.y) * TUNE.linBlend;
+      lv.z += (0 - lv.z) * TUNE.linBlend;
     }
   }
 }
 
 // ---------------------------------------------------------------
-// Cursor → raycast → impulse
+// Slave the model's bones to the physics ragdoll (aim-based).
+//   • pelvis (root): driven rigidly from the pelvis body.
+//   • every other mapped bone: rotate its bind orientation by the minimal
+//     swing from its bind segment direction to its current one, where
+//     directions are read from physics JOINT positions (constraint-pinned,
+//     so spin/flip-proof). Bone positions stay bind-local off the parent,
+//     so bone lengths stay rigid and the mesh holds together.
+// Unmapped bones (spine_01/02, clavicles, neck_01, fingers, toes) keep
+// their bind-local transform and ride along with their driven parent.
+// ---------------------------------------------------------------
+const _ja = new CANNON.Vec3(), _jb = new CANNON.Vec3();
+function jointWorld(name, out) {
+  const j = jointByPivot[name];
+  j.A.pointToWorldFrame(j.pa, _ja);
+  j.B.pointToWorldFrame(j.pb, _jb);
+  return out.set((_ja.x + _jb.x) * 0.5, (_ja.y + _jb.y) * 0.5, (_ja.z + _jb.z) * 0.5);
+}
+function srcWorld(spec, out) {
+  if (spec.joint) return jointWorld(spec.joint, out);
+  const b = bodies[spec.body];
+  return out.set(b.position.x, b.position.y, b.position.z);
+}
+
+const _rootM = new THREE.Matrix4(), _rootV = new THREE.Vector3(), _rootQ = new THREE.Quaternion();
+const desiredRoot = new THREE.Matrix4();
+const aimQuat = {}; // bone name -> THREE.Quaternion (desired world orientation)
+const _pFrom = new THREE.Vector3(), _pTo = new THREE.Vector3(), _curDir = new THREE.Vector3();
+const _swing = new THREE.Quaternion();
+const _parentQ = new THREE.Quaternion(), _localQ = new THREE.Quaternion();
+const _childW = new THREE.Matrix4();
+
+function driveDFS(bone, parentWorld) {
+  let world;
+  if (bone === rootDrive.bone) {
+    _childW.copy(parentWorld).invert().multiply(desiredRoot); // local = parent^-1 * desiredRoot
+    _childW.decompose(bone.position, bone.quaternion, bone.scale);
+    world = desiredRoot;                                 // children hang off the driven root
+  } else if (aimQuat[bone.name]) {
+    _parentQ.setFromRotationMatrix(parentWorld);
+    _localQ.copy(_parentQ).invert().multiply(aimQuat[bone.name]); // local = parent^-1 * desiredWorld
+    bone.quaternion.copy(_localQ);                       // position stays bind-local
+    bone.updateMatrix();
+    world = new THREE.Matrix4().multiplyMatrices(parentWorld, bone.matrix);
+  } else {
+    bone.updateMatrix();                                 // bind-local (never modified)
+    world = new THREE.Matrix4().multiplyMatrices(parentWorld, bone.matrix);
+  }
+  const children = bone.children;
+  for (let i = 0; i < children.length; i++) {
+    if (children[i].isBone) driveDFS(children[i], world);
+  }
+}
+
+function driveBones() {
+  // root from pelvis body
+  const pb = bodies.pelvis;
+  _rootV.set(pb.position.x, pb.position.y, pb.position.z);
+  _rootQ.set(pb.quaternion.x, pb.quaternion.y, pb.quaternion.z, pb.quaternion.w);
+  _rootM.compose(_rootV, _rootQ, ONE);
+  desiredRoot.multiplyMatrices(_rootM, rootDrive.offset);
+  // aim every other mapped bone from current joint directions
+  for (const a of aims) {
+    srcWorld(a.from, _pFrom);
+    srcWorld(a.to, _pTo);
+    _curDir.copy(_pTo).sub(_pFrom);
+    if (_curDir.lengthSq() < 1e-10) continue;
+    _curDir.normalize();
+    _swing.setFromUnitVectors(a.bindDir, _curDir);
+    (aimQuat[a.bone.name] || (aimQuat[a.bone.name] = new THREE.Quaternion()))
+      .copy(_swing).multiply(a.bindQuat);
+  }
+  driveDFS(rootBone, rootParentWorld);
+}
+
+// ---------------------------------------------------------------
+// Cursor → raycast (against proxy colliders) → impulse
 // ---------------------------------------------------------------
 const raycaster = new THREE.Raycaster();
 const ndc = new THREE.Vector2(-2, -2); // offscreen until first move
@@ -456,7 +626,7 @@ let hoverName = null;
 
 const IMPULSE_K = 0.16;       // px/frame -> impulse magnitude
 const SPEED_CLAMP = 90;       // cap runaway flicks
-const SPIN = 2.8;             // extra rotational kick on contact (on top of the impulse's own torque)
+const SPIN = 2.8;             // extra rotational kick on contact
 const SPIN_MAXW = 26;         // clamp so a hard flick can't fling a limb to NaN-speed
 let totalImpact = 0;
 let lastHit = 0;
@@ -509,9 +679,9 @@ function tryStrike() {
   );
   body.applyImpulse(impulse, rel);
 
-  // amplify the rotational response: add extra spin along the hit's torque axis
-  const tau = rel.cross(impulse);                  // rel × impulse  (torque direction)
-  const dOmega = body.invInertiaWorld.vmult(tau);  // resulting angular-velocity change
+  // amplify the rotational response along the hit's torque axis
+  const tau = rel.cross(impulse);
+  const dOmega = body.invInertiaWorld.vmult(tau);
   const av = body.angularVelocity;
   av.x += dOmega.x * SPIN;
   av.y += dOmega.y * SPIN;
@@ -525,17 +695,6 @@ function tryStrike() {
 
   // consume the motion so we don't re-apply the same delta next frame
   moveX = 0; moveY = 0; cursorSpeed = 0;
-}
-
-// ---------------------------------------------------------------
-// Hover highlight (emissive glow ramp on the part under the cursor)
-// ---------------------------------------------------------------
-function updateHighlight(dt) {
-  for (const mesh of pickMeshes) {
-    const mat = mesh.userData.baseMat;
-    const target = (mesh.userData.bodyName === hoverName) ? 0.55 : 0.0;
-    mat.emissiveIntensity += (target - mat.emissiveIntensity) * Math.min(1, dt * 12);
-  }
 }
 
 // ---------------------------------------------------------------
@@ -573,6 +732,7 @@ let acc = 0;
 
 function animate() {
   requestAnimationFrame(animate);
+  if (!started) return;
   let dt = clock.getDelta();
   if (dt > 0.1) dt = 0.1; // clamp tab-switch spikes
 
@@ -588,18 +748,19 @@ function animate() {
     steps++;
   }
 
-  // sync visuals to physics
-  for (const [name, group] of Object.entries(visuals)) {
-    const b = bodies[name];
-    group.position.set(b.position.x, b.position.y, b.position.z);
-    group.quaternion.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
+  // sync proxy colliders to physics
+  for (const name in proxByName) {
+    const b = bodies[name], pm = proxByName[name];
+    pm.position.set(b.position.x, b.position.y, b.position.z);
+    pm.quaternion.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
   }
 
-  updateHighlight(dt);
+  // slave the skinned model's bones to the physics bodies
+  driveBones();
+
   updateHUD(dt);
   renderer.render(scene, camera);
 }
-animate();
 
 // ---------------------------------------------------------------
 // Resize
@@ -611,8 +772,23 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// minimal inspection hook
-window.__sim = { bodies, world, camera, get totalImpact() { return totalImpact; } };
+// inspection hook — also lets you live-tune the muscle gains (window.__sim.TUNE)
+// and snap the dummy back to its neutral stance (window.__sim.reset()).
+window.__sim = {
+  bodies, world, camera, scene, TUNE,
+  get totalImpact() { return totalImpact; },
+  reset() {
+    for (const [name, b] of Object.entries(bodies)) {
+      const rp = restPos[name], rq = restQuats[name];
+      b.position.set(rp.x, rp.y, rp.z);
+      b.quaternion.set(rq.x, rq.y, rq.z, rq.w);
+      b.velocity.set(0, 0, 0);
+      b.angularVelocity.set(0, 0, 0);
+      b.force.set(0, 0, 0);
+      b.torque.set(0, 0, 0);
+    }
+  },
+};
 </script>
 </body>
 </html>
