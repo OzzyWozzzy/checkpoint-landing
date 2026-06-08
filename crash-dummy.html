@@ -103,6 +103,12 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
    ============================================================ */
 
 // ---------------------------------------------------------------
+// Global scale — the whole dummy (visual mesh + physics bodies +
+// camera framing) is built at this factor. 1.0 = original size.
+// ---------------------------------------------------------------
+const SCALE = 1.5;
+
+// ---------------------------------------------------------------
 // Renderer / scene / camera
 // ---------------------------------------------------------------
 const app = document.getElementById('app');
@@ -119,11 +125,11 @@ scene.background = new THREE.Color(0xffffff);
 scene.fog = new THREE.Fog(0xffffff, 9, 24);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-const camTarget = new THREE.Vector3(0, 0.92, 0);
+const camTarget = new THREE.Vector3(0, 0.92 * SCALE, 0);
 const camDir = new THREE.Vector3(0.5, 0.16, 1).normalize(); // 3/4 view
-// Frame the whole ~1.7m figure (with arm span) regardless of viewport aspect.
+// Frame the whole figure (with arm span) regardless of viewport aspect.
 function frameCamera() {
-  const H = 2.0, W = 1.4, margin = 1.12;
+  const H = 2.0 * SCALE, W = 1.4 * SCALE, margin = 1.12;
   const vfov = THREE.MathUtils.degToRad(camera.fov);
   const distH = (H * margin / 2) / Math.tan(vfov / 2);
   const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
@@ -211,6 +217,8 @@ const TEX_BASE  = 'crash-dummy/textures/crush_dummy_default_';
 
 new GLTFLoader().load(MODEL_URL, (gltf) => {
   const model = gltf.scene;
+  model.scale.setScalar(SCALE);     // scale the whole figure up; physics is built from these scaled world joints
+  model.updateMatrixWorld(true);
   scene.add(model);
 
   const skinned = model.getObjectByProperty('isSkinnedMesh', true);
@@ -269,28 +277,31 @@ function build(model, skinned) {
   // Limb bodies are boxes whose local +Y runs down the segment between
   // its two joints; torso/head are placed explicitly.
   const defs = [];
+  // limb/body cross-sections are hardcoded in metres; scale them with the
+  // figure (segment *lengths* already scale, since a/b come from scaled P()).
+  const S = SCALE;
   const limb = (name, bone, a, b, r, mass) => {
     const c = a.clone().add(b).multiplyScalar(0.5);
     const d = b.clone().sub(a);
-    defs.push({ name, bone, kind: 'box', he: [r, d.length() / 2, r], center: c, quat: quatAlong(d), mass });
+    defs.push({ name, bone, kind: 'box', he: [r * S, d.length() / 2, r * S], center: c, quat: quatAlong(d), mass });
   };
   const handBody = (name, bone, wrist, fromElbow, mass) => {
     const d = wrist.clone().sub(fromElbow);
-    const c = wrist.clone().add(d.clone().normalize().multiplyScalar(0.05));
-    defs.push({ name, bone, kind: 'box', he: [0.05, 0.06, 0.03], center: c, quat: quatAlong(d), mass });
+    const c = wrist.clone().add(d.clone().normalize().multiplyScalar(0.05 * S));
+    defs.push({ name, bone, kind: 'box', he: [0.05 * S, 0.06 * S, 0.03 * S], center: c, quat: quatAlong(d), mass });
   };
 
   // --- torso / head ---
-  defs.push({ name: 'pelvis', bone: 'pelvis', kind: 'box', he: [0.135, 0.11, 0.115],
-              center: P('pelvis').add(new THREE.Vector3(0, 0.02, 0)), quat: new THREE.Quaternion(), mass: 12 });
+  defs.push({ name: 'pelvis', bone: 'pelvis', kind: 'box', he: [0.135 * S, 0.11 * S, 0.115 * S],
+              center: P('pelvis').add(new THREE.Vector3(0, 0.02 * S, 0)), quat: new THREE.Quaternion(), mass: 12 });
   {
     const a = P('spine_01'), b = P('neck_01');
     const c = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
-    defs.push({ name: 'chest', bone: 'spine_03', kind: 'box', he: [0.17, d.length() / 2, 0.12],
+    defs.push({ name: 'chest', bone: 'spine_03', kind: 'box', he: [0.17 * S, d.length() / 2, 0.12 * S],
                 center: c, quat: quatAlong(d), mass: 16 });
   }
-  defs.push({ name: 'head', bone: 'head', kind: 'sphere', r: 0.12,
-              center: P('head').add(new THREE.Vector3(0, 0.07, 0)), quat: new THREE.Quaternion(), mass: 5 });
+  defs.push({ name: 'head', bone: 'head', kind: 'sphere', r: 0.12 * S,
+              center: P('head').add(new THREE.Vector3(0, 0.07 * S, 0)), quat: new THREE.Quaternion(), mass: 5 });
 
   // --- arms ---
   limb('upperArmL', 'upperarm_l', P('upperarm_l'), P('lowerarm_l'), 0.050, 3);
@@ -306,14 +317,14 @@ function build(model, skinned) {
   {
     const a = P('foot_l'), b = P('ball_l');
     const c = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
-    defs.push({ name: 'footL', bone: 'foot_l', kind: 'box', he: [0.06, 0.05, 0.10], center: c, quat: quatAlong(d), mass: 1, pinned: true });
+    defs.push({ name: 'footL', bone: 'foot_l', kind: 'box', he: [0.06 * S, 0.05 * S, 0.10 * S], center: c, quat: quatAlong(d), mass: 1, pinned: true });
   }
   limb('upperLegR', 'thigh_r', P('thigh_r'), P('calf_r'), 0.085, 7);
   limb('lowerLegR', 'calf_r',  P('calf_r'),  P('foot_r'), 0.065, 5);
   {
     const a = P('foot_r'), b = P('ball_r');
     const c = a.clone().add(b).multiplyScalar(0.5), d = b.clone().sub(a);
-    defs.push({ name: 'footR', bone: 'foot_r', kind: 'box', he: [0.06, 0.05, 0.10], center: c, quat: quatAlong(d), mass: 1, pinned: true });
+    defs.push({ name: 'footR', bone: 'foot_r', kind: 'box', he: [0.06 * S, 0.05 * S, 0.10 * S], center: c, quat: quatAlong(d), mass: 1, pinned: true });
   }
 
   // joints: [bodyA, bodyB, pivotBone, coneAngle, twistAngle]
@@ -437,10 +448,66 @@ function build(model, skinned) {
   for (const [boneName, fromS, toS] of AIM) {
     const bone = boneByName[boneName];
     bone.updateWorldMatrix(true, false);
-    const bindQuat = new THREE.Quaternion().setFromRotationMatrix(bone.matrixWorld);
+    // getWorldQuaternion strips scale; setFromRotationMatrix would be wrong
+    // because the model node carries a non-unit SCALE (see SCALE constant).
+    const bindQuat = bone.getWorldQuaternion(new THREE.Quaternion());
     const bindDir = srcBind(toS).sub(srcBind(fromS)).normalize();
     aims.push({ bone, from: fromS, to: toS, bindDir, bindQuat });
   }
+
+  // ---- Rest pose: relax the arms in to a natural hang -----------
+  // The model's bind pose is an A-pose (arms angled out from the torso).
+  // Swing each arm chain about its shoulder pivot so the upper arm points
+  // more straight down, giving a relaxed at-the-sides stance. The whole
+  // chain (upper arm + forearm + hand) is rotated rigidly about the
+  // shoulder POINT, so every joint anchor stays coincident — no constraint
+  // pivot needs recomputing. This runs AFTER the aim setup so each bone's
+  // bind reference is the true A-pose: the aims then map bind→down at runtime
+  // (including the hand, whose aim reads its body — moving it before the aim
+  // capture would leave the hand stuck in its splayed bind orientation).
+  const _downV = new THREE.Vector3(0, -1, 0);
+  // Rigidly rotate a chain of bodies about `pivot` by the swing that turns
+  // `dir` partway (`t`, 0..1) toward straight-down; updates each body's rest
+  // target and live transform.
+  const swingChain = (pivot, dir, t, names) => {
+    const target = dir.clone().normalize().lerp(_downV, t).normalize();
+    const swing = new THREE.Quaternion().setFromUnitVectors(dir.clone().normalize(), target);
+    for (const name of names) {
+      const b = bodies[name];
+      const p = new THREE.Vector3(b.position.x, b.position.y, b.position.z)
+        .sub(pivot).applyQuaternion(swing).add(pivot);
+      const q = restQuats[name].clone().premultiply(swing);
+      restPos[name].set(p.x, p.y, p.z);
+      restQuats[name].copy(q);
+      b.position.set(p.x, p.y, p.z);
+      b.quaternion.set(q.x, q.y, q.z, q.w);
+      b.velocity.set(0, 0, 0);
+      b.angularVelocity.set(0, 0, 0);
+    }
+    return swing;
+  };
+  for (const side of ['L', 'R']) {
+    const lc = side === 'L' ? 'l' : 'r';
+    const shoulder = P('upperarm_' + lc);
+    const bindElbow = P('lowerarm_' + lc);
+    const bindWrist = P('hand_' + lc);
+    // 1) swing the upper arm down toward the side; the whole arm follows
+    const s1 = swingChain(shoulder, bindElbow.clone().sub(shoulder), 0.70,
+      ['upperArm' + side, 'lowerArm' + side, 'hand' + side]);
+    // 2) straighten the forearm: swing forearm+hand about the (now-moved) elbow
+    const elbow = shoulder.clone().add(bindElbow.clone().sub(shoulder).applyQuaternion(s1));
+    const wrist = shoulder.clone().add(bindWrist.clone().sub(shoulder).applyQuaternion(s1));
+    swingChain(elbow, wrist.clone().sub(elbow), 0.70, ['lowerArm' + side, 'hand' + side]);
+  }
+  // Re-derive every joint-limit's neutral relative orientation so the new
+  // arm hang is the zero-stress rest (otherwise the shoulder limit fights it).
+  for (const j of jointLimits) {
+    const qa = new THREE.Quaternion(j.A.quaternion.x, j.A.quaternion.y, j.A.quaternion.z, j.A.quaternion.w);
+    const qb = new THREE.Quaternion(j.B.quaternion.x, j.B.quaternion.y, j.B.quaternion.z, j.B.quaternion.w);
+    j.restRel.copy(qa.invert().multiply(qb));
+  }
+
+  captureIdleBase(); // snapshot the neutral targets for the idle animation
 }
 
 // ---------------------------------------------------------------
@@ -571,6 +638,7 @@ const _pFrom = new THREE.Vector3(), _pTo = new THREE.Vector3(), _curDir = new TH
 const _swing = new THREE.Quaternion();
 const _parentQ = new THREE.Quaternion(), _localQ = new THREE.Quaternion();
 const _childW = new THREE.Matrix4();
+const _decV = new THREE.Vector3(), _decS = new THREE.Vector3(); // scratch for scale-safe decompose
 
 function driveDFS(bone, parentWorld) {
   let world;
@@ -579,7 +647,7 @@ function driveDFS(bone, parentWorld) {
     _childW.decompose(bone.position, bone.quaternion, bone.scale);
     world = desiredRoot;                                 // children hang off the driven root
   } else if (aimQuat[bone.name]) {
-    _parentQ.setFromRotationMatrix(parentWorld);
+    parentWorld.decompose(_decV, _parentQ, _decS); // decompose strips the model SCALE (setFromRotationMatrix would not)
     _localQ.copy(_parentQ).invert().multiply(aimQuat[bone.name]); // local = parent^-1 * desiredWorld
     bone.quaternion.copy(_localQ);                       // position stays bind-local
     bone.updateMatrix();
@@ -626,11 +694,7 @@ let hoverName = null;
 
 const IMPULSE_K = 0.16;       // px/frame -> impulse magnitude
 const SPEED_CLAMP = 90;       // cap runaway flicks
-<<<<<<< HEAD
-const SPIN = 2.8;             // extra rotational kick on contact
-=======
 const SPIN = 2.8;             // extra rotational kick on contact (on top of the impulse's own torque)
->>>>>>> 3c0cf11ad90904d27cf3a7c572c0262cdcceb553
 const SPIN_MAXW = 26;         // clamp so a hard flick can't fling a limb to NaN-speed
 let totalImpact = 0;
 let lastHit = 0;
@@ -683,15 +747,9 @@ function tryStrike() {
   );
   body.applyImpulse(impulse, rel);
 
-<<<<<<< HEAD
-  // amplify the rotational response along the hit's torque axis
-  const tau = rel.cross(impulse);
-  const dOmega = body.invInertiaWorld.vmult(tau);
-=======
   // amplify the rotational response: add extra spin along the hit's torque axis
   const tau = rel.cross(impulse);                  // rel × impulse  (torque direction)
   const dOmega = body.invInertiaWorld.vmult(tau);  // resulting angular-velocity change
->>>>>>> 3c0cf11ad90904d27cf3a7c572c0262cdcceb553
   const av = body.angularVelocity;
   av.x += dOmega.x * SPIN;
   av.y += dOmega.y * SPIN;
@@ -734,6 +792,46 @@ function prettyName(n) {
 }
 
 // ---------------------------------------------------------------
+// Idle animation — a subtle, always-on "alive" layer on the neutral
+// pose. Each frame we modulate the rest TARGETS of the pelvis / chest
+// / head (a slow breathing bob + a slower weight-shift sway); the
+// muscle servos chase them, so the figure breathes and sways gently
+// without ever leaving its standing silhouette. Cursor strikes still
+// override it — they punch the bodies far off these soft targets.
+// ---------------------------------------------------------------
+const IDLE_NAMES = ['pelvis', 'chest', 'head'];
+const idleBaseP = {}, idleBaseQ = {};
+function captureIdleBase() {
+  for (const n of IDLE_NAMES) {
+    idleBaseP[n] = restPos[n].clone();
+    idleBaseQ[n] = restQuats[n].clone();
+  }
+}
+let idleT = 0;
+const _idleAxX = new THREE.Vector3(1, 0, 0), _idleAxZ = new THREE.Vector3(0, 0, 1);
+const _idleDQ = new THREE.Quaternion();
+function preRot(name, axis, ang) {       // layer a small world-space rotation onto a rest target
+  _idleDQ.setFromAxisAngle(axis, ang);
+  restQuats[name].premultiply(_idleDQ);
+}
+function applyIdle(dt) {
+  idleT += dt;
+  const t = idleT, S = SCALE;
+  for (const n of IDLE_NAMES) {          // reset to neutral, then re-layer the idle this frame
+    restPos[n].copy(idleBaseP[n]);
+    restQuats[n].copy(idleBaseQ[n]);
+  }
+  const breath = Math.sin(t * 1.5);      // ~0.24 Hz chest rise/fall
+  const sway   = Math.sin(t * 0.8);      // slower side-to-side weight shift
+  restPos.pelvis.x += sway * 0.006 * S;  restPos.pelvis.y += breath * 0.004 * S;
+  restPos.chest.x  += sway * 0.010 * S;  restPos.chest.y  += breath * 0.007 * S;
+  restPos.head.x   += sway * 0.012 * S;  restPos.head.y   += breath * 0.006 * S;
+  preRot('chest', _idleAxZ, sway * 0.018);    // gentle torso lean into the shift
+  preRot('head',  _idleAxZ, -sway * 0.016);   // head counter-leans to stay roughly level
+  preRot('head',  _idleAxX, breath * 0.014);  // tiny nod with the breath
+}
+
+// ---------------------------------------------------------------
 // Animation loop — fixed-step physics for stable 60fps
 // ---------------------------------------------------------------
 const clock = new THREE.Clock();
@@ -747,6 +845,7 @@ function animate() {
   if (dt > 0.1) dt = 0.1; // clamp tab-switch spikes
 
   tryStrike();
+  applyIdle(dt); // refresh the idle-modulated rest targets before the servos read them
 
   acc += dt;
   let steps = 0;

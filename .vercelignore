@@ -1,0 +1,13 @@
+# Internal / non-public material — keep out of the deployed site
+.git
+.claude
+chats
+CLAUDE.md
+README.md
+
+# Large source assets & dev artifacts not needed at runtime
+crash-dummy/source
+project/scraps
+project/sections
+project/screenshots
+project/landing.css

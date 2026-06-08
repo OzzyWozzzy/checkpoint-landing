@@ -36,6 +36,9 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 html, body { margin: 0; padding: 0; }
+/* nav row (64px) + its 1px bottom border. The splash fills the rest of the
+   viewport below the nav so the two together are exactly one screen tall. */
+:root { --nav-h: 65px; }
 body { background: var(--bg-app); color: var(--text-body); overflow-x: hidden; }
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
@@ -95,7 +98,7 @@ img { display: block; max-width: 100%; }
   border-bottom: 1px solid var(--border-hairline);
 }
 .ck-nav__row {
-  height: 64px;
+  height: calc(var(--nav-h) - 1px); /* + the nav's 1px bottom border = --nav-h */
   display: flex; align-items: center; justify-content: space-between; gap: 24px;
 }
 .ck-nav__links { display: flex; align-items: center; gap: 28px; }
@@ -127,7 +130,8 @@ img { display: block; max-width: 100%; }
 }
 /* ---- Splash (full-screen landing page) ------------------- */
 .ck-splash {
-  position: relative; height: 100vh; min-height: 620px;
+  /* fill the viewport minus the nav so nav + splash == one full screen */
+  position: relative; height: calc(100vh - var(--nav-h)); min-height: 560px;
   overflow: hidden; background: var(--bg-app);
 }
 /* Faded, centered 3D ragdoll backdrop (head + torso framing). It lives
@@ -1147,8 +1151,8 @@ function Footer() {
 function App() {
   return (
     <React.Fragment>
-      <Splash />
       <Nav />
+      <Splash />
       <Hero />
       <Problem />
       <HowItWorks />
@@ -1361,6 +1365,42 @@ function startHeroDummy(container) {
     for (const [boneName, fromS, toS] of AIM) {
       const bone = byn[boneName]; bone.updateWorldMatrix(true, false);
       aims.push({ bone, from: fromS, to: toS, bindDir: srcBind(toS).sub(srcBind(fromS)).normalize(), bindQuat: new THREE.Quaternion().setFromRotationMatrix(bone.matrixWorld) });
+    }
+
+    // ---- relax the arms into a natural hang (close to the body) ----
+    // Bind pose is a splayed A-pose. Swing each arm chain about its shoulder
+    // (then straighten the forearm about the elbow) so the arms rest at the
+    // sides. Rotating about the joint POINT keeps every constraint anchor
+    // coincident. This runs AFTER the aim setup so each bone's bind reference
+    // is the true A-pose and the aims map bind→down at runtime — including the
+    // hand, whose aim reads its body (moving it before the aim capture would
+    // leave the hand stuck facing outward in its splayed bind orientation).
+    const _downV = new THREE.Vector3(0, -1, 0);
+    const swingChain = (pivot, dir, t, names) => {
+      const target = dir.clone().normalize().lerp(_downV, t).normalize();
+      const swing = new THREE.Quaternion().setFromUnitVectors(dir.clone().normalize(), target);
+      for (const name of names) {
+        const b = bodies[name];
+        const p = new THREE.Vector3(b.position.x, b.position.y, b.position.z).sub(pivot).applyQuaternion(swing).add(pivot);
+        const q = restQuats[name].clone().premultiply(swing);
+        restPos[name].set(p.x, p.y, p.z); restQuats[name].copy(q);
+        b.position.set(p.x, p.y, p.z); b.quaternion.set(q.x, q.y, q.z, q.w);
+        b.velocity.set(0, 0, 0); b.angularVelocity.set(0, 0, 0);
+      }
+      return swing;
+    };
+    for (const side of ['L', 'R']) {
+      const lc = side === 'L' ? 'l' : 'r';
+      const shoulder = P('upperarm_' + lc), bindElbow = P('lowerarm_' + lc), bindWrist = P('hand_' + lc);
+      const s1 = swingChain(shoulder, bindElbow.clone().sub(shoulder), 0.70, ['upperArm' + side, 'lowerArm' + side, 'hand' + side]);
+      const elbow = shoulder.clone().add(bindElbow.clone().sub(shoulder).applyQuaternion(s1));
+      const wrist = shoulder.clone().add(bindWrist.clone().sub(shoulder).applyQuaternion(s1));
+      swingChain(elbow, wrist.clone().sub(elbow), 0.70, ['lowerArm' + side, 'hand' + side]);
+    }
+    for (const j of jointLimits) {
+      const qa = new THREE.Quaternion(j.A.quaternion.x, j.A.quaternion.y, j.A.quaternion.z, j.A.quaternion.w);
+      const qb = new THREE.Quaternion(j.B.quaternion.x, j.B.quaternion.y, j.B.quaternion.z, j.B.quaternion.w);
+      j.restRel.copy(qa.invert().multiply(qb));
     }
   }
 
