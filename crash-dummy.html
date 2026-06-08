@@ -456,6 +456,8 @@ let hoverName = null;
 
 const IMPULSE_K = 0.16;       // px/frame -> impulse magnitude
 const SPEED_CLAMP = 90;       // cap runaway flicks
+const SPIN = 2.8;             // extra rotational kick on contact (on top of the impulse's own torque)
+const SPIN_MAXW = 26;         // clamp so a hard flick can't fling a limb to NaN-speed
 let totalImpact = 0;
 let lastHit = 0;
 let peakBar = 0;
@@ -506,6 +508,16 @@ function tryStrike() {
     hit.point.z - body.position.z
   );
   body.applyImpulse(impulse, rel);
+
+  // amplify the rotational response: add extra spin along the hit's torque axis
+  const tau = rel.cross(impulse);                  // rel × impulse  (torque direction)
+  const dOmega = body.invInertiaWorld.vmult(tau);  // resulting angular-velocity change
+  const av = body.angularVelocity;
+  av.x += dOmega.x * SPIN;
+  av.y += dOmega.y * SPIN;
+  av.z += dOmega.z * SPIN;
+  const wlen = Math.sqrt(av.x * av.x + av.y * av.y + av.z * av.z);
+  if (wlen > SPIN_MAXW) { const k = SPIN_MAXW / wlen; av.x *= k; av.y *= k; av.z *= k; }
 
   lastHit = mag;
   totalImpact += mag;
