@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Crash Test Dummy — Ragdoll Impact Lab</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #fff; }
+  #app { position: fixed; inset: 0; }
+  canvas { display: block; cursor: crosshair; }
+
+  /* ---- Lab readout HUD ---- */
+  #hud {
+    position: fixed; top: 18px; left: 18px; z-index: 10;
+    font-family: "SFMono-Regular", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+    background: #0d1411;
+    border: 1px solid #1f2d27;
+    border-radius: 10px;
+    padding: 14px 16px;
+    width: 232px; max-width: 46vw;
+    color: #57f5b5;
+    box-shadow: 0 8px 30px rgba(0,0,0,.18), inset 0 0 0 1px rgba(87,245,181,.06);
+    user-select: none;
+    pointer-events: none; /* never intercept cursor strikes */
+  }
+  #hud .title {
+    font-size: 10px; letter-spacing: .22em; color: #3a7d63;
+    text-transform: uppercase; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #hud .title .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #57f5b5; box-shadow: 0 0 8px #57f5b5;
+    animation: blink 1.4s steps(2, jump-none) infinite;
+  }
+  @keyframes blink { 50% { opacity: .25; } }
+  #hud .row { display: flex; justify-content: space-between; align-items: baseline; margin: 5px 0; }
+  #hud .row .k { font-size: 10px; letter-spacing: .12em; color: #4f9e80; text-transform: uppercase; }
+  #hud .row .v { font-size: 18px; font-variant-numeric: tabular-nums; text-shadow: 0 0 10px rgba(87,245,181,.35); }
+  #hud .v.small { font-size: 13px; color: #9bf0cf; }
+  #hud .bar { height: 6px; border-radius: 3px; background: #16241d; margin-top: 10px; overflow: hidden; }
+  #hud .bar > i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg,#57f5b5,#f7d046); transition: width .08s linear; }
+  #hud .hint { margin-top: 11px; font-size: 9.5px; letter-spacing: .08em; color: #2f6b53; line-height: 1.5; }
+  #peakflash { color: #f7d046 !important; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="hud">
+  <div class="title"><span class="dot"></span>Impact Telemetry</div>
+  <div class="row"><span class="k">Total Impact</span><span class="v" id="total">0.0</span></div>
+  <div class="row"><span class="k">Last Hit</span><span class="v small" id="last">— N·s</span></div>
+  <div class="row"><span class="k">Cursor Vel</span><span class="v small" id="cvel">0 px/f</span></div>
+  <div class="row"><span class="k">Target</span><span class="v small" id="target">none</span></div>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="hint">Sweep the cursor through the dummy to strike it.<br/>Faster sweeps hit harder. Drag-rotate disabled — pure impact mode.</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+
+/* ============================================================
+   Crash Test Dummy — ragdoll impact simulation
+   Three.js render layer synced to a cannon-es physics ragdoll.
+   Active "muscle" PD controllers hold a neutral standing pose;
+   cursor sweeps cast a ray and punch impulses into body parts.
+   ============================================================ */
+
+// ---------------------------------------------------------------
+// Renderer / scene / camera
+// ---------------------------------------------------------------
+const app = document.getElementById('app');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+app.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
+scene.fog = new THREE.Fog(0xffffff, 9, 24);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+const camTarget = new THREE.Vector3(0, 1.05, 0);
+const camDir = new THREE.Vector3(0.5, 0.16, 1).normalize(); // 3/4 view
+// Frame the whole ~2.4m figure (with arm span) regardless of viewport aspect.
+function frameCamera() {
+  const H = 2.6, W = 1.5, margin = 1.12;
+  const vfov = THREE.MathUtils.degToRad(camera.fov);
+  const distH = (H * margin / 2) / Math.tan(vfov / 2);
+  const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+  const distW = (W * margin / 2) / Math.tan(hfov / 2);
+  const dist = Math.max(distH, distW);
+  camera.position.copy(camTarget).addScaledVector(camDir, dist);
+  camera.lookAt(camTarget);
+}
+frameCamera();
+
+// ---------------------------------------------------------------
+// Lighting — soft ambient + one directional key light w/ shadows
+// ---------------------------------------------------------------
+scene.add(new THREE.HemisphereLight(0xffffff, 0xdfe3e8, 0.85));
+const ambient = new THREE.AmbientLight(0xffffff, 0.35);
+scene.add(ambient);
+
+const key = new THREE.DirectionalLight(0xffffff, 1.55);
+key.position.set(4.5, 8.5, 5.0);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.near = 1;
+key.shadow.camera.far = 25;
+key.shadow.camera.left = -4; key.shadow.camera.right = 4;
+key.shadow.camera.top = 5;  key.shadow.camera.bottom = -1;
+key.shadow.bias = -0.0004;
+key.shadow.radius = 4;
+scene.add(key);
+
+// ---------------------------------------------------------------
+// Sterile testing-room floor + subtle grid
+// ---------------------------------------------------------------
+const floorMat = new THREE.MeshStandardMaterial({ color: 0xf4f5f6, roughness: 0.95, metalness: 0.0 });
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+const grid = new THREE.GridHelper(40, 80, 0xc7ccd1, 0xe4e7ea);
+grid.material.transparent = true;
+grid.material.opacity = 0.55;
+grid.position.y = 0.002;
+scene.add(grid);
+
+// ---------------------------------------------------------------
+// Toon gradient map for flat / industrial shading
+// ---------------------------------------------------------------
+function makeToonGradient(stops) {
+  const data = new Uint8Array(stops);
+  const tex = new THREE.DataTexture(data, stops.length, 1, THREE.RedFormat);
+  tex.needsUpdate = true;
+  tex.minFilter = THREE.NearestFilter;
+  tex.magFilter = THREE.NearestFilter;
+  return tex;
+}
+const toonRamp = makeToonGradient([90, 150, 205, 245]);
+
+const GLOW = new THREE.Color(0x35d6ff);
+function bodyMaterial() {
+  return new THREE.MeshToonMaterial({ color: 0x9b9ea3, gradientMap: toonRamp, emissive: GLOW, emissiveIntensity: 0 });
+}
+const blackMat = new THREE.MeshToonMaterial({ color: 0x14161a, gradientMap: toonRamp });
+const yellowMat = new THREE.MeshToonMaterial({ color: 0xf7d046, gradientMap: toonRamp });
+
+// ---------------------------------------------------------------
+// Physics world
+// ---------------------------------------------------------------
+const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
+world.broadphase = new CANNON.SAPBroadphase(world);
+world.solver.iterations = 22;
+world.solver.tolerance = 0.0008;
+world.allowSleep = false;
+
+const G_GROUND = 1, G_DUMMY = 2;
+
+// static floor collider so crumpled limbs can rest on the ground
+const groundBody = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), collisionFilterGroup: G_GROUND, collisionFilterMask: G_DUMMY });
+groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+world.addBody(groundBody);
+
+// (feet are pinned simply by being static bodies — see build loop)
+
+// ---------------------------------------------------------------
+// Dummy definition — every segment is a primitive with mass
+// ---------------------------------------------------------------
+const ARM_X = 0.30, LEG_X = 0.11;
+const PARTS = {
+  pelvis:    { kind: 'box', he: [0.17, 0.12, 0.12], pos: [0, 1.28, 0], mass: 12 },
+  chest:     { kind: 'box', he: [0.19, 0.20, 0.13], pos: [0, 1.62, 0], mass: 16 },
+  head:      { kind: 'sphere', r: 0.16, scaleY: 1.28, pos: [0, 2.05, 0], mass: 5 },
+
+  upperArmL: { kind: 'cyl', r: 0.062, h: 0.46, pos: [ ARM_X, 1.58, 0], mass: 3 },
+  lowerArmL: { kind: 'cyl', r: 0.055, h: 0.42, pos: [ ARM_X, 1.12, 0], mass: 2 },
+  handL:     { kind: 'box', he: [0.06, 0.07, 0.04], pos: [ ARM_X, 0.84, 0], mass: 0.6 },
+  upperArmR: { kind: 'cyl', r: 0.062, h: 0.46, pos: [-ARM_X, 1.58, 0], mass: 3 },
+  lowerArmR: { kind: 'cyl', r: 0.055, h: 0.42, pos: [-ARM_X, 1.12, 0], mass: 2 },
+  handR:     { kind: 'box', he: [0.06, 0.07, 0.04], pos: [-ARM_X, 0.84, 0], mass: 0.6 },
+
+  upperLegL: { kind: 'cyl', r: 0.095, h: 0.46, pos: [ LEG_X, 0.92, 0], mass: 7 },
+  lowerLegL: { kind: 'cyl', r: 0.072, h: 0.54, pos: [ LEG_X, 0.40, 0], mass: 5 },
+  footL:     { kind: 'box', he: [0.09, 0.06, 0.17], pos: [ LEG_X, 0.06, 0.05], mass: 1, pinned: true },
+  upperLegR: { kind: 'cyl', r: 0.095, h: 0.46, pos: [-LEG_X, 0.92, 0], mass: 7 },
+  lowerLegR: { kind: 'cyl', r: 0.072, h: 0.54, pos: [-LEG_X, 0.40, 0], mass: 5 },
+  footR:     { kind: 'box', he: [0.09, 0.06, 0.17], pos: [-LEG_X, 0.06, 0.05], mass: 1, pinned: true },
+};
+
+// joint: [bodyA, bodyB, worldPivot, coneAngle, twistAngle]
+const JOINTS = [
+  ['pelvis', 'chest',     [0, 1.42, 0],      0.40, 0.35],   // spine
+  ['chest',  'head',      [0, 1.87, 0],      0.55, 0.45],   // neck
+  ['chest',  'upperArmL', [ ARM_X, 1.80, 0], 1.30, 0.65],   // shoulder
+  ['upperArmL','lowerArmL',[ ARM_X, 1.34, 0],1.15, 0.30],   // elbow
+  ['lowerArmL','handL',   [ ARM_X, 0.92, 0], 0.50, 0.30],   // wrist
+  ['chest',  'upperArmR', [-ARM_X, 1.80, 0], 1.30, 0.65],
+  ['upperArmR','lowerArmR',[-ARM_X, 1.34, 0],1.15, 0.30],
+  ['lowerArmR','handR',   [-ARM_X, 0.92, 0], 0.50, 0.30],
+  ['pelvis', 'upperLegL', [ LEG_X, 1.15, 0], 1.00, 0.40],   // hip
+  ['upperLegL','lowerLegL',[ LEG_X, 0.67, 0],1.05, 0.25],   // knee
+  ['lowerLegL','footL',   [ LEG_X, 0.13, 0], 0.40, 0.25],   // ankle
+  ['pelvis', 'upperLegR', [-LEG_X, 1.15, 0], 1.00, 0.40],
+  ['upperLegR','lowerLegR',[-LEG_X, 0.67, 0],1.05, 0.25],
+  ['lowerLegR','footR',   [-LEG_X, 0.13, 0], 0.40, 0.25],
+];
+
+const dummyMat = new CANNON.Material('dummy');
+const contact = new CANNON.ContactMaterial(dummyMat, dummyMat, { friction: 0.55, restitution: 0.05 });
+world.addContactMaterial(contact);
+const groundContact = new CANNON.ContactMaterial(dummyMat, dummyMat, { friction: 0.8, restitution: 0.0 });
+world.addContactMaterial(groundContact);
+
+// ---------------------------------------------------------------
+// Build bodies + visual groups
+// ---------------------------------------------------------------
+const bodies = {};   // name -> CANNON.Body
+const visuals = {};  // name -> THREE.Group (synced to body)
+const pickMeshes = []; // meshes used for raycasting (carry .userData.bodyName)
+const restQuats = {}; // name -> THREE.Quaternion (neutral pose target)
+const restPos = {};   // name -> CANNON.Vec3 (neutral standing position)
+
+function addStripe(group, axisLen, radius, y) {
+  // a bold black painted band around a limb
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(radius * 1.06, radius * 1.06, 0.05, 20), blackMat);
+  ring.position.y = y;
+  ring.castShadow = true;
+  group.add(ring);
+}
+function addJointRing(group, radius, y) {
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(radius * 0.98, radius * 0.34, 10, 20), blackMat);
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = y;
+  ring.castShadow = true;
+  group.add(ring);
+}
+
+for (const [name, p] of Object.entries(PARTS)) {
+  // ---- physics shape ----
+  let shape, mesh;
+  const mat = bodyMaterial();
+  const group = new THREE.Group();
+
+  if (p.kind === 'box') {
+    shape = new CANNON.Box(new CANNON.Vec3(p.he[0], p.he[1], p.he[2]));
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(p.he[0] * 2, p.he[1] * 2, p.he[2] * 2), mat);
+  } else if (p.kind === 'sphere') {
+    shape = new CANNON.Sphere(p.r);
+    mesh = new THREE.Mesh(new THREE.SphereGeometry(p.r, 28, 22), mat);
+    if (p.scaleY) mesh.scale.y = p.scaleY; // ovoid head
+  } else { // cylinder visual, box collider (stable inertia + contacts)
+    shape = new CANNON.Box(new CANNON.Vec3(p.r, p.h / 2, p.r));
+    mesh = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r, p.h, 22), mat);
+  }
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData.bodyName = name;
+  mesh.userData.baseMat = mat;
+  group.add(mesh);
+  pickMeshes.push(mesh);
+
+  // decorative joint rings / stripes
+  if (p.kind === 'cyl') {
+    addJointRing(group, p.r, p.h / 2);
+    addJointRing(group, p.r, -p.h / 2);
+    if (name.startsWith('upper')) addStripe(group, p.h, p.r, 0);
+  }
+  if (name === 'chest') {
+    // bold torso stripes
+    for (const yy of [0.06, -0.06]) {
+      const s = new THREE.Mesh(new THREE.BoxGeometry(p.he[0] * 2 + 0.005, 0.05, p.he[2] * 2 + 0.005), blackMat);
+      s.position.y = yy; s.castShadow = true; group.add(s);
+    }
+    // chest hazard chevron
+    const chev = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, p.he[2] * 2 + 0.01), yellowMat);
+    chev.position.set(0, -0.005, 0); chev.castShadow = true; group.add(chev);
+  }
+  if (name === 'pelvis') {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(p.he[0] * 2 + 0.005, 0.05, p.he[2] * 2 + 0.005), blackMat);
+    s.castShadow = true; group.add(s);
+  }
+  if (name === 'head') {
+    const band = new THREE.Mesh(new THREE.TorusGeometry(p.r * 0.92, p.r * 0.12, 10, 28), blackMat);
+    band.rotation.x = Math.PI / 2; band.position.y = -0.02; band.scale.y = (p.scaleY||1);
+    group.add(band);
+  }
+
+  scene.add(group);
+  visuals[name] = group;
+
+  // ---- physics body ----
+  const body = new CANNON.Body({
+    mass: p.pinned ? 0 : p.mass,   // pinned feet = static bodies
+    material: dummyMat,
+    position: new CANNON.Vec3(p.pos[0], p.pos[1], p.pos[2]),
+    linearDamping: 0.12,
+    angularDamping: 0.35,
+    collisionFilterGroup: G_DUMMY,
+    collisionFilterMask: G_GROUND, // self-collision off for stability + 60fps
+  });
+  body.addShape(shape);
+  body.userData = { pinned: !!p.pinned, mass: p.mass };
+  world.addBody(body);
+  bodies[name] = body;
+  restQuats[name] = new THREE.Quaternion(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+  restPos[name] = new CANNON.Vec3(body.position.x, body.position.y, body.position.z);
+}
+
+// ---------------------------------------------------------------
+// Joints — PointToPoint ball joint holds segments together (very
+// stable, NaN-safe). Range-of-motion limits are enforced as
+// one-sided angular springs in applyJointLimits(): the joint moves
+// freely inside its cone and resists beyond it.
+// ---------------------------------------------------------------
+const jointLimits = []; // { A, B, restRel:THREE.Quaternion, cone }
+for (const [aName, bName, pivot, cone, twist] of JOINTS) {
+  const A = bodies[aName], B = bodies[bName];
+  const pivotA = new CANNON.Vec3(pivot[0] - A.position.x, pivot[1] - A.position.y, pivot[2] - A.position.z);
+  const pivotB = new CANNON.Vec3(pivot[0] - B.position.x, pivot[1] - B.position.y, pivot[2] - B.position.z);
+  const c = new CANNON.PointToPointConstraint(A, pivotA, B, pivotB, 1e6);
+  c.collideConnected = false;
+  world.addConstraint(c);
+
+  // rest relative rotation of B in A's frame (identity here, but store generally)
+  const qA = new THREE.Quaternion(A.quaternion.x, A.quaternion.y, A.quaternion.z, A.quaternion.w);
+  const qB = new THREE.Quaternion(B.quaternion.x, B.quaternion.y, B.quaternion.z, B.quaternion.w);
+  const restRel = qA.clone().invert().multiply(qB);
+  jointLimits.push({ A, B, restRel, cone });
+}
+
+// One-sided ROM limit via bounded relative-velocity correction: inside
+// the cone the joint is free; past it we drive the *relative* angular
+// velocity inward (and brake outward motion), split between both bodies.
+const _qA = new THREE.Quaternion(), _qB = new THREE.Quaternion();
+const _rel = new THREE.Quaternion(), _delta = new THREE.Quaternion();
+const _axis = new THREE.Vector3();
+const LIM_RATE = 9.0;    // commanded inward rad/s per rad past the limit
+const LIM_BLEND = 0.5;   // how aggressively we pull back toward the cone
+function applyJointLimits() {
+  for (const j of jointLimits) {
+    const A = j.A, B = j.B;
+    _qA.set(A.quaternion.x, A.quaternion.y, A.quaternion.z, A.quaternion.w);
+    _qB.set(B.quaternion.x, B.quaternion.y, B.quaternion.z, B.quaternion.w);
+    _rel.copy(_qA).invert().multiply(_qB);            // B in A frame
+    _delta.copy(j.restRel).invert().multiply(_rel);   // deviation from rest
+    let w = _delta.w;
+    if (w < 0) { _delta.x *= -1; _delta.y *= -1; _delta.z *= -1; w = -w; }
+    w = Math.min(1, Math.max(-1, w));
+    const angle = 2 * Math.acos(w);                   // unsigned swing+twist
+    if (angle <= j.cone) continue;                    // inside ROM → free
+
+    const s = Math.sqrt(1 - w * w);
+    if (s < 1e-5) continue;
+    _axis.set(_delta.x / s, _delta.y / s, _delta.z / s); // axis in A's frame
+    _axis.applyQuaternion(_qA);                          // → world (+axis = "further out")
+
+    const over = angle - j.cone;
+    // current relative angular velocity along the outward axis
+    const curAlong =
+      (B.angularVelocity.x - A.angularVelocity.x) * _axis.x +
+      (B.angularVelocity.y - A.angularVelocity.y) * _axis.y +
+      (B.angularVelocity.z - A.angularVelocity.z) * _axis.z;
+    const desiredAlong = -over * LIM_RATE;            // command inward motion
+    const corr = (desiredAlong - curAlong) * LIM_BLEND * 0.5; // half to each body
+    B.angularVelocity.x += _axis.x * corr; B.angularVelocity.y += _axis.y * corr; B.angularVelocity.z += _axis.z * corr;
+    A.angularVelocity.x -= _axis.x * corr; A.angularVelocity.y -= _axis.y * corr; A.angularVelocity.z -= _axis.z * corr;
+  }
+}
+
+// ---------------------------------------------------------------
+// Active "muscle" PD controllers — restore neutral standing pose.
+// Torque toward each segment's rest world-orientation, damped by
+// angular velocity. Gains scale with mass; intentionally modest so
+// gravity can hold the dummy slumped once it's knocked over.
+// ---------------------------------------------------------------
+// Velocity-servo "muscles": each substep we nudge a segment's angular
+// velocity toward the rotation that restores its neutral orientation,
+// with a capped command rate and a soft blend. Bounded velocity edits =
+// unconditionally stable regardless of a segment's inertia (the tiny
+// hands no longer blow up the way a stiff torque-PD did).
+const POSE_RATE = 14.0;   // commanded rad/s per rad of orientation error
+const POSE_MAXW = 20.0;   // cap on commanded angular rate
+const POSE_BLEND = 0.48;  // fraction of the gap closed per substep
+// linear (positional) restoration — holds the standing silhouette softly
+const LIN_RATE = 9.0;     // commanded m/s per metre of offset
+const LIN_MAXV = 7.0;     // cap on commanded linear speed
+const LIN_BLEND = 0.28;   // fraction of the velocity gap closed per substep
+const _cur = new THREE.Quaternion();
+const _errq = new THREE.Quaternion();
+function applyPoseControllers() {
+  for (const [name, body] of Object.entries(bodies)) {
+    if (body.userData.pinned) continue;
+    _cur.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+    // error rotation (world): rest * cur^-1 maps current -> neutral
+    _errq.copy(restQuats[name]).multiply(_cur.invert());
+    if (_errq.w < 0) { _errq.x *= -1; _errq.y *= -1; _errq.z *= -1; _errq.w *= -1; }
+    const w = Math.min(1, Math.max(-1, _errq.w));
+    const angle = 2 * Math.acos(w);
+    if (angle < 1e-4) { continue; }
+    const s = Math.sqrt(1 - w * w);
+    if (s < 1e-5) continue;
+    const ax = _errq.x / s, ay = _errq.y / s, az = _errq.z / s;
+
+    const cmd = Math.min(angle * POSE_RATE, POSE_MAXW);
+    const av = body.angularVelocity;
+    av.x += (ax * cmd - av.x) * POSE_BLEND;
+    av.y += (ay * cmd - av.y) * POSE_BLEND;
+    av.z += (az * cmd - av.z) * POSE_BLEND;
+
+    // --- linear servo: softly hold the standing silhouette ---
+    const rp = restPos[name], cp = body.position, lv = body.velocity;
+    let ex = rp.x - cp.x, ey = rp.y - cp.y, ez = rp.z - cp.z;
+    const d = Math.sqrt(ex * ex + ey * ey + ez * ez);
+    if (d > 1e-4) {
+      let vcmd = d * LIN_RATE;
+      if (vcmd > LIN_MAXV) vcmd = LIN_MAXV;
+      const inv = vcmd / d;
+      lv.x += (ex * inv - lv.x) * LIN_BLEND;
+      lv.y += (ey * inv - lv.y) * LIN_BLEND;
+      lv.z += (ez * inv - lv.z) * LIN_BLEND;
+    } else {
+      lv.x += (0 - lv.x) * LIN_BLEND;
+      lv.y += (0 - lv.y) * LIN_BLEND;
+      lv.z += (0 - lv.z) * LIN_BLEND;
+    }
+  }
+}
+
+// ---------------------------------------------------------------
+// Cursor → raycast → impulse
+// ---------------------------------------------------------------
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2(-2, -2); // offscreen until first move
+let haveCursor = false;
+let moveX = 0, moveY = 0, cursorSpeed = 0;
+let hoverName = null;
+
+const IMPULSE_K = 0.16;       // px/frame -> impulse magnitude
+const SPEED_CLAMP = 90;       // cap runaway flicks
+let totalImpact = 0;
+let lastHit = 0;
+let peakBar = 0;
+
+renderer.domElement.addEventListener('mousemove', (e) => {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  ndc.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+  moveX = e.movementX || 0;
+  moveY = e.movementY || 0;
+  cursorSpeed = Math.sqrt(moveX * moveX + moveY * moveY);
+  haveCursor = true;
+});
+renderer.domElement.addEventListener('mouseleave', () => { haveCursor = false; hoverName = null; });
+
+const _right = new THREE.Vector3();
+const _up = new THREE.Vector3();
+function tryStrike() {
+  if (!haveCursor) { hoverName = null; return; }
+  raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects(pickMeshes, false);
+  if (hits.length === 0) { hoverName = null; return; }
+
+  const hit = hits[0];
+  const name = hit.object.userData.bodyName;
+  hoverName = name;
+
+  if (cursorSpeed < 0.4) return; // hovering, not sweeping — no impulse
+  const body = bodies[name];
+  if (!body || body.userData.pinned) return;
+
+  // build a world-space push from cursor screen motion
+  _right.setFromMatrixColumn(camera.matrixWorld, 0); // camera X
+  _up.setFromMatrixColumn(camera.matrixWorld, 1);    // camera Y
+  const dir = new THREE.Vector3()
+    .addScaledVector(_right, moveX)
+    .addScaledVector(_up, -moveY);
+  if (dir.lengthSq() < 1e-8) return;
+  dir.normalize();
+
+  const speed = Math.min(cursorSpeed, SPEED_CLAMP);
+  const mag = speed * IMPULSE_K;
+
+  const impulse = new CANNON.Vec3(dir.x * mag, dir.y * mag, dir.z * mag);
+  const rel = new CANNON.Vec3(
+    hit.point.x - body.position.x,
+    hit.point.y - body.position.y,
+    hit.point.z - body.position.z
+  );
+  body.applyImpulse(impulse, rel);
+
+  lastHit = mag;
+  totalImpact += mag;
+  peakBar = Math.min(1, mag / 14);
+
+  // consume the motion so we don't re-apply the same delta next frame
+  moveX = 0; moveY = 0; cursorSpeed = 0;
+}
+
+// ---------------------------------------------------------------
+// Hover highlight (emissive glow ramp on the part under the cursor)
+// ---------------------------------------------------------------
+function updateHighlight(dt) {
+  for (const mesh of pickMeshes) {
+    const mat = mesh.userData.baseMat;
+    const target = (mesh.userData.bodyName === hoverName) ? 0.55 : 0.0;
+    mat.emissiveIntensity += (target - mat.emissiveIntensity) * Math.min(1, dt * 12);
+  }
+}
+
+// ---------------------------------------------------------------
+// HUD
+// ---------------------------------------------------------------
+const elTotal = document.getElementById('total');
+const elLast = document.getElementById('last');
+const elCvel = document.getElementById('cvel');
+const elTarget = document.getElementById('target');
+const elBar = document.getElementById('bar');
+let hudTick = 0;
+function updateHUD(dt) {
+  hudTick += dt;
+  peakBar *= Math.pow(0.04, dt); // decay the bar
+  if (hudTick > 0.07) {
+    hudTick = 0;
+    elTotal.textContent = totalImpact.toFixed(1);
+    elLast.textContent = lastHit > 0 ? lastHit.toFixed(2) + ' N·s' : '— N·s';
+    elCvel.textContent = Math.round(cursorSpeed) + ' px/f';
+    elTarget.textContent = hoverName ? prettyName(hoverName) : 'none';
+    elTarget.id = hoverName ? 'peakflash' : 'target';
+    elBar.style.width = (peakBar * 100).toFixed(0) + '%';
+  }
+}
+function prettyName(n) {
+  return n.replace(/([A-Z])/g, ' $1').replace(/(L|R)$/, m => ' ' + m).toUpperCase();
+}
+
+// ---------------------------------------------------------------
+// Animation loop — fixed-step physics for stable 60fps
+// ---------------------------------------------------------------
+const clock = new THREE.Clock();
+const FIXED = 1 / 60;
+let acc = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  let dt = clock.getDelta();
+  if (dt > 0.1) dt = 0.1; // clamp tab-switch spikes
+
+  tryStrike();
+
+  acc += dt;
+  let steps = 0;
+  while (acc >= FIXED && steps < 5) {
+    applyPoseControllers();
+    applyJointLimits();
+    world.step(FIXED);
+    acc -= FIXED;
+    steps++;
+  }
+
+  // sync visuals to physics
+  for (const [name, group] of Object.entries(visuals)) {
+    const b = bodies[name];
+    group.position.set(b.position.x, b.position.y, b.position.z);
+    group.quaternion.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
+  }
+
+  updateHighlight(dt);
+  updateHUD(dt);
+  renderer.render(scene, camera);
+}
+animate();
+
+// ---------------------------------------------------------------
+// Resize
+// ---------------------------------------------------------------
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  frameCamera();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// minimal inspection hook
+window.__sim = { bodies, world, camera, get totalImpact() { return totalImpact; } };
+</script>
+</body>
+</html>
