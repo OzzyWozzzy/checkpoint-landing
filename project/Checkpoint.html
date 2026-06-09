@@ -528,8 +528,7 @@ function Nav() {
             <span className="ck-livechip">
               <span className="ck-live-dot"></span>3 agents running
             </span>
-            <Button variant="ghost" size="sm">Sign in</Button>
-            <Button variant="primary" size="sm">Book a demo</Button>
+
           </div>
         </div>
       </Container>
@@ -617,12 +616,16 @@ function Hero() {
               repro steps, crashes, and balance data. On every build. At scale.
             </p>
             <div className="ck-hero__ctas">
-              <Button variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} />}>
-                Book a demo
-              </Button>
-              <Button variant="secondary" size="lg" iconLeft={<Icon name="play" size={15} />}>
-                See a sample report
-              </Button>
+              <a href="#cta">
+                <Button variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} />}>
+                  Book a demo
+                </Button>
+              </a>
+              <a href="#reports">
+                <Button variant="secondary" size="lg" iconLeft={<Icon name="play" size={15} />}>
+                  See a sample report
+                </Button>
+              </a>
             </div>
             <div className="ck-hero__trust">
               <span>No test scripts</span>
@@ -1058,7 +1061,7 @@ function Roadmap() {
 function CTA() {
   const { Button, Input } = CK;
   return (
-    <section className="ck-section ck-section--tight">
+    <section className="ck-section ck-section--tight" id="cta">
       <Container>
         <Reveal>
           <div className="ck-cta">
@@ -1100,11 +1103,6 @@ function CTA() {
 /* ------------------------------------------------------------------ */
 
 function Footer() {
-  const cols = [
-    { h: 'Product',   links: ['How it works', 'Reports', 'Pricing'] },
-    { h: 'Company',   links: ['About', 'Careers', 'Blog', 'Contact'] },
-    { h: 'Resources', links: ['Docs', 'Get started', 'Security', 'Status'] },
-  ];
   return (
     <footer className="ck-footer">
       <Container>
@@ -1114,29 +1112,19 @@ function Footer() {
             <p style={{ margin: 0, fontSize: 'var(--fs-small)', lineHeight: 1.5, color: 'var(--text-muted)' }}>
               The AI playtesting layer for modern game development.
             </p>
-            <span className="ck-livechip" style={{ alignSelf: 'flex-start' }}>
-              <span className="ck-live-dot"></span>All systems operational
-            </span>
-          </div>
-          <div className="ck-footer__cols">
-            {cols.map((c) => (
-              <div key={c.h} className="ck-footer__col">
-                <h5>{c.h}</h5>
-                {c.links.map((l) => <a key={l} href="#">{l}</a>)}
-              </div>
-            ))}
           </div>
         </div>
         <div className="ck-divider"></div>
         <div style={{
-          display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap',
           padding: '20px 0 36px',
           fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text-muted)',
         }}>
           <span>© 2026 Checkpoint, Inc.</span>
-          <span style={{ display: 'flex', gap: 20 }}>
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
+          <span style={{ display: 'flex', gap: 24 }}>
+            <a href="#how">How it works</a>
+            <a href="#reports">Reports</a>
+            <a href="#cta">Get started</a>
           </span>
         </div>
       </Container>
