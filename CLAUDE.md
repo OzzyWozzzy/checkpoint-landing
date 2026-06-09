@@ -13,7 +13,7 @@ There is **no build system, package.json, test suite, or linter.** Everything is
 
 ## Running things
 
-Both entry points fetch dependencies and sibling files at runtime, so they **must be served over HTTP** (not opened as `file://`) and need network access. `.claude/launch.json` defines the two preview servers:
+Both entry points fetch dependencies and sibling files at runtime, so they **must be served over HTTP** (not opened as `file://`) and need network access.
 
 ```bash
 # Checkpoint landing page  →  http://localhost:3456/Checkpoint.html
@@ -40,7 +40,7 @@ A single file that renders a React app in-browser:
 - `image-slot.js` registers an `<image-slot>` web component (a user-fillable image placeholder that persists via a sidecar file in the Claude Design "omelette" runtime; read-only outside it).
 - Design tokens are CSS custom properties from `_ds/…/tokens/*.css` + `styles.css`, linked in `<head>`. The system is a dark "instrument-panel" theme: a near-black **slate** ramp, **signal lime** (`--lime #c8f65d`) used sparingly as the action/live accent, and a four-way **severity** palette (critical / warning / healthy / info) treated as "the spine" of the UI. Depth comes from borders + background steps, not shadows. Type is **Geist / Geist Mono** (mono always `tabular-nums` for telemetry).
 - The page ends with one `ReactDOM.createRoot(...).render(<App />)`; `App` composes the section components defined inline (Nav, Hero, Problem, HowItWorks, Reports, Why, Roadmap, CTA, Footer).
-- `project/sections/*.jsx` are the original per-section design exports; `Checkpoint.html` is the consolidated implementation that supersedes them.
+- `Checkpoint.html` is the single consolidated implementation; there are no separate per-section source files.
 
 ## Working on crash-dummy.html
 
@@ -50,6 +50,10 @@ One self-contained file: a Three.js render layer synced every frame to a **canno
 
 Behaviour is governed by clearly grouped tuning constants near the top of each system: `POSE_RATE/POSE_MAXW/POSE_BLEND` (orientation servo), `LIN_RATE/LIN_MAXV/LIN_BLEND` (positional servo), and `IMPULSE_K / SPEED_CLAMP / SPIN / SPIN_MAXW` (cursor-strike impulse and extra rotational kick). Physics runs on a fixed `1/60` timestep with an accumulator.
 
+## Vercel deployment
+
+The site is deployed at **https://checkpoint-landing-ai.vercel.app**. `vercel.json` at the repo root sets `outputDirectory` to `project/` (so all relative asset imports work) and rewrites `/` → `/Checkpoint.html` (clean root URL). Deploy with `npx vercel deploy --prod` from the repo root.
+
 ## Git
 
-This repo's root is this project directory (it was previously mis-rooted at the user's home folder — if `git status` ever shows the entire home directory or marks all tracked files `deleted`, the `.git` is in the wrong place again). Tracked content is the design bundle + `crash-dummy.html`; `.claude/launch.json` is local tooling.
+This repo's root is this project directory (it was previously mis-rooted at the user's home folder — if `git status` ever shows the entire home directory or marks all tracked files `deleted`, the `.git` is in the wrong place again). Tracked content is the design bundle, `crash-dummy.html`, and `vercel.json`.
