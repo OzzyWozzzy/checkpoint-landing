@@ -141,11 +141,11 @@ img { display: block; max-width: 100%; }
    so it never blocks the copy or links. */
 .ck-splash__dummy {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  opacity: 0.32;
-  /* narrow elliptical fade so only the central head+torso column shows and
-     the wide arms melt away to keep the side copy from overlapping the body */
-  -webkit-mask-image: radial-gradient(26% 76% at 50% 44%, #000 46%, transparent 100%);
-  mask-image: radial-gradient(26% 76% at 50% 44%, #000 46%, transparent 100%);
+  opacity: 0.92;
+  /* central column reveal: show the full head + torso + limbs as the
+     interactive centerpiece, fading the edges so the side copy stays clean */
+  -webkit-mask-image: radial-gradient(34% 88% at 50% 46%, #000 62%, transparent 100%);
+  mask-image: radial-gradient(34% 88% at 50% 46%, #000 62%, transparent 100%);
 }
 .ck-splash__dummy canvas { display: block; }
 /* thin diagonal, echoing the reference layout */
@@ -186,9 +186,9 @@ img { display: block; max-width: 100%; }
   .ck-splash__title { font-size: clamp(2.75rem, 15vw, 5rem); bottom: auto; top: 15%; }
   .ck-splash__intro { top: auto; bottom: 16%; left: clamp(20px, 5vw, 64px); right: clamp(20px, 5vw, 64px); width: auto; }
   .ck-splash__line { display: none; }
-  .ck-splash__dummy { opacity: 0.26; }
+  .ck-splash__dummy { opacity: 0.72; }
 }
-@media (prefers-reduced-motion: reduce) { .ck-splash__dummy { opacity: 0.28; } }
+@media (prefers-reduced-motion: reduce) { .ck-splash__dummy { opacity: 0.85; } }
 
 .ck-hero__grid {
   position: relative; z-index: 1;
@@ -372,6 +372,51 @@ img { display: block; max-width: 100%; }
   from { transform: translateY(26px); }
   to   { transform: translateY(-26px); }
 }
+
+/* ---- Depth + motion polish (richer than flat minimal) ---- */
+:root {
+  --shadow-soft: 0 14px 34px -22px rgba(40, 28, 12, 0.42);
+  --shadow-lift: 0 24px 52px -24px rgba(40, 28, 12, 0.52);
+}
+/* soft elevation on the instrument panels and the CTA band */
+.ck-recording, .ck-cta { box-shadow: var(--shadow-soft); }
+/* hover-lift utility for cards we own (kept off animated wrappers) */
+.ck-elevate { transition: transform var(--dur-slow) var(--ease-out), box-shadow var(--dur-slow) var(--ease-out); will-change: transform; }
+.ck-elevate:hover { transform: translateY(-6px); box-shadow: var(--shadow-lift); }
+/* interaction polish */
+.ck-nav__link { transition: color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
+.ck-nav__link:hover { transform: translateY(-1px); }
+a, button { transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out); }
+button:active { transform: translateY(1px); }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* brand glows breathe + drift so the hero and CTA never feel static */
+  .ck-hero__glow { animation: ck-glow-breathe 11s ease-in-out infinite; }
+  .ck-cta::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(420px 240px at 12% -20%, color-mix(in oklab, var(--accent) 14%, transparent), transparent 70%);
+    animation: ck-glow-drift 15s ease-in-out infinite alternate;
+  }
+  /* faint surveying grid drifts across the dark-beige band */
+  .ck-band-beige::before { animation: ck-grid-pan 26s linear infinite; }
+}
+@keyframes ck-glow-breathe { 0%, 100% { opacity: 0.7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes ck-glow-drift  { from { transform: translate(0, 0); } to { transform: translate(46px, 22px); } }
+@keyframes ck-grid-pan    { from { background-position: 0 0; } to { background-position: 46px 46px; } }
+
+/* dark-beige band: gridlines at the edges, keep CTA copy above the glow */
+.ck-band-beige { position: relative; }
+.ck-band-beige > .ck-container { position: relative; z-index: 1; }
+.ck-band-beige::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.4;
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--beige-dark-deep) 34%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--beige-dark-deep) 34%, transparent) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(72% 64% at 50% 46%, transparent 38%, #000 100%);
+  mask-image: radial-gradient(72% 64% at 50% 46%, transparent 38%, #000 100%);
+}
+.ck-cta > * { position: relative; z-index: 1; }
 
 /* ---- AI Bots page: trace playhead sweep ----------------- */
 /* A faint plum vertical line drifts across the TraceCompare panel,
@@ -567,10 +612,11 @@ function Logo({ height = 28 }) {
       style={{ display: 'inline-flex', alignItems: 'center' }}>
       <svg width={height * 5.25} height={height} viewBox="0 0 168 32"
         fill="none" role="img" aria-label="Checkpoint">
-        <rect width="32" height="32" rx="8" fill="#9b3a61"/>
-        <path d="M11 7.5V24.5" stroke="#fbf4ef" strokeWidth="2.1" strokeLinecap="round"/>
-        <path d="M11 8.2C13.4 6.7 15.8 6.7 18.2 8.2C20.6 9.7 23 9.7 25.4 8.2V16.4C23 17.9 20.6 17.9 18.2 16.4C15.8 14.9 13.4 14.9 11 16.4V8.2Z" fill="#fbf4ef"/>
-        <circle cx="11" cy="24.5" r="1.8" fill="#fbf4ef"/>
+        {/* rewind mark: gray disc with a light left-pointing triangle on a dark tile */}
+        <rect width="32" height="32" rx="8" fill="#1a1713"/>
+        <circle cx="13" cy="16" r="8.5" fill="#8c8c8c"/>
+        <path d="M9 16L23.5 8V24Z" fill="#dcdcdc" stroke="#dcdcdc"
+          strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round"/>
         <text x="44" y="22" fontFamily="Geist, system-ui, sans-serif" fontSize="20"
           fontWeight="700" letterSpacing="-0.02em" fill="#20190d">Checkpoint</text>
       </svg>
@@ -614,12 +660,6 @@ function Nav({ view = 'home' }) {
             <a className={`ck-nav__link${view === 'home' ? ' is-active' : ''}`} href="#/">Home</a>
             <a className={`ck-nav__link${onBots ? ' is-active' : ''}`} href="#/ai-bots">AI Bots</a>
             <a className={`ck-nav__link${view === 'waitlist' ? ' is-active' : ''}`} href="#/waitlist">Waitlist</a>
-          </div>
-          <div className="ck-nav__actions">
-            <span className="ck-livechip">
-              <span className="ck-live-dot"></span>{onBots ? 'live across 14 lobbies' : '3 agents running'}
-            </span>
-
           </div>
         </div>
       </Container>
@@ -1394,7 +1434,7 @@ function HeroBots() {
               <span>Runs live in-match</span>
             </div>
           </div>
-          <Reveal delay={80}><LobbyStrip /></Reveal>
+          <Reveal delay={80}><div className="ck-elevate"><LobbyStrip /></div></Reveal>
         </div>
       </Container>
     </header>
@@ -1678,9 +1718,10 @@ function WaitlistPage() {
 
           {/* right: the signup card (dark-beige top accent = second scheme colour) */}
           <Reveal delay={80}>
-            <div className="ck-sr" style={{
+            <div className="ck-elevate" style={{
               borderRadius: 'var(--radius-xl)', overflow: 'hidden',
               background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+              boxShadow: 'var(--shadow-soft)',
             }}>
               <div style={{ height: 4, background: 'var(--beige-dark)' }}></div>
               <div style={{ padding: 28 }}>
