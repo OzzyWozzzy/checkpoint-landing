@@ -93,11 +93,9 @@ img { display: block; max-width: 100%; }
 /* ---- Nav ------------------------------------------------- */
 .ck-nav {
   position: sticky; top: 0; z-index: 50;
-  /* frosted espresso bar: warm near-black so the fixed nav reads as distinct */
-  background: color-mix(in oklab, var(--espresso) 92%, transparent);
+  background: color-mix(in oklab, var(--bg-app) 82%, transparent);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--espresso-border);
-  box-shadow: 0 10px 28px -16px rgba(20, 14, 8, 0.6);
+  border-bottom: 1px solid var(--border-hairline);
 }
 .ck-nav__row {
   height: calc(var(--nav-h) - 1px); /* + the nav's 1px bottom border = --nav-h */
@@ -105,12 +103,11 @@ img { display: block; max-width: 100%; }
 }
 .ck-nav__links { display: flex; align-items: center; gap: 28px; }
 .ck-nav__link {
-  font-size: var(--fs-small); color: var(--espresso-ink);
+  font-size: var(--fs-small); color: var(--text-secondary);
   font-weight: var(--fw-medium); letter-spacing: var(--tracking-snug);
-  border-bottom: 2px solid transparent;
-  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  transition: color var(--dur-fast) var(--ease-out);
 }
-.ck-nav__link:hover { color: var(--espresso-ink-hi); border-bottom-color: var(--accent-dim); }
+.ck-nav__link:hover { color: var(--text-strong); }
 .ck-nav__actions { display: flex; align-items: center; gap: 10px; }
 @media (max-width: 860px) { .ck-nav__links { display: none; } }
 
@@ -320,7 +317,7 @@ img { display: block; max-width: 100%; }
 }
 
 /* ---- AI Bots page: nav link active state ---------------- */
-.ck-nav__link.is-active { color: var(--espresso-ink-hi); border-bottom-color: var(--accent-hover); }
+.ck-nav__link.is-active { color: var(--accent); }
 
 /* ---- Second scheme colour: dark-beige band -------------- */
 /* A deeper warm tone behind the "what we do" section. Text on the band is
@@ -426,6 +423,92 @@ button:active { transform: translateY(1px); }
 }
 .ck-cta > * { position: relative; z-index: 1; }
 
+/* ============================================================
+   Cluely-inspired layer: bolder hero type, animated gradient
+   mesh, a scrolling marquee, big stat strips, and a blur-rise
+   headline entrance. Adapted to the warm beige + plum palette.
+   ============================================================ */
+
+/* oversized, confident hero headline */
+.ck-display-xl {
+  font-size: clamp(2.6rem, 6.4vw, 5.2rem);
+  line-height: 0.98; letter-spacing: -0.04em;
+  font-weight: var(--fw-bold); color: var(--text-max);
+  text-wrap: balance; margin: 0;
+}
+.ck-hero__sub {
+  font-size: clamp(1.05rem, 1.6vw, 1.35rem); line-height: 1.5;
+  color: var(--text-secondary); font-weight: var(--fw-medium); margin: 0;
+}
+/* gradient-filled keyword */
+.ck-grad-text {
+  background: linear-gradient(96deg, var(--accent), #d06a3f 55%, var(--accent-hover));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+
+/* animated gradient mesh: soft drifting plum + warm blobs */
+.ck-hero-mesh {
+  position: absolute; inset: -20% -10% auto -10%; height: 150%; z-index: 0;
+  pointer-events: none; filter: blur(46px); opacity: 0.5;
+  background:
+    radial-gradient(38% 50% at 22% 30%, color-mix(in oklab, var(--accent) 55%, transparent), transparent 70%),
+    radial-gradient(34% 46% at 78% 24%, color-mix(in oklab, #e08a4e 50%, transparent), transparent 72%),
+    radial-gradient(40% 50% at 60% 78%, color-mix(in oklab, var(--accent-dim) 55%, transparent), transparent 72%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ck-hero-mesh { animation: ck-mesh-drift 18s ease-in-out infinite alternate; }
+}
+@keyframes ck-mesh-drift {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); }
+  to   { transform: translate3d(3%, 2%, 0) scale(1.12); }
+}
+
+/* scrolling marquee strip (the "works with" row) */
+.ck-marquee {
+  position: relative; overflow: hidden; width: 100%;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.ck-marquee__track {
+  display: inline-flex; gap: 44px; align-items: center; white-space: nowrap;
+  padding-right: 44px; will-change: transform;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ck-marquee__track { animation: ck-marquee-scroll 26s linear infinite; }
+}
+@keyframes ck-marquee-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.ck-marquee__item {
+  font-family: var(--font-mono); font-size: var(--fs-body); letter-spacing: var(--tracking-snug);
+  color: var(--text-secondary); display: inline-flex; align-items: center; gap: 10px;
+}
+.ck-marquee__item::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex: none; }
+
+/* big stat strip (credibility markers) */
+.ck-statrow {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+  border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);
+  padding: 28px 0;
+}
+@media (max-width: 720px) { .ck-statrow { grid-template-columns: 1fr; gap: 18px; } }
+.ck-stat__num {
+  font-family: var(--font-sans); font-weight: var(--fw-bold);
+  font-size: clamp(2rem, 3.4vw, 2.8rem); line-height: 1; letter-spacing: -0.03em;
+  color: var(--text-max);
+}
+.ck-stat__label { margin-top: 8px; font-size: var(--fs-small); color: var(--text-secondary); line-height: 1.45; }
+
+/* blur-rise headline entrance (runs once on mount; used on above-fold heroes) */
+@media (prefers-reduced-motion: no-preference) {
+  .ck-rise   { animation: ck-rise-in 0.9s var(--ease-out) both; }
+  .ck-rise-2 { animation: ck-rise-in 0.9s var(--ease-out) 0.12s both; }
+  .ck-rise-3 { animation: ck-rise-in 0.9s var(--ease-out) 0.24s both; }
+}
+@keyframes ck-rise-in {
+  from { opacity: 0; transform: translateY(26px); filter: blur(10px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
 /* ---- AI Bots page: trace playhead sweep ----------------- */
 /* A faint plum vertical line drifts across the TraceCompare panel,
    echoing the shimmer/recording motifs. Frozen for reduced-motion. */
@@ -497,12 +580,6 @@ button:active { transform: translateY(1px); }
   --beige-dark-ink:  #241d10;  /* readable near-black text on the dark band */
   --beige-dark-sub:  #2f2718;  /* secondary text on the dark band */
 
-  /* espresso: warm brown near-black, the dark anchor for the fixed nav.
-     Pairs with the beige base and keeps plum as the only accent. */
-  --espresso:        #2a2018;
-  --espresso-border: #3c2f24;
-  --espresso-ink:    #e7ddca;  /* muted cream nav text */
-  --espresso-ink-hi: #fbf4ef;  /* bright cream: hover / active nav text */
 
   /* focus ring */
   --ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--accent-dim);
@@ -581,6 +658,33 @@ function SectionHead({ overline, title, lede, center = false, maxWidth }) {
   );
 }
 
+/* Cluely-style scrolling marquee: the row is duplicated so the loop is seamless. */
+function MarqueeStrip({ items }) {
+  return (
+    <div className="ck-marquee" aria-hidden="true">
+      <div className="ck-marquee__track">
+        {items.concat(items).map((it, i) => (
+          <span className="ck-marquee__item" key={i}>{it}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* Cluely-style 3-up stat / credibility strip. */
+function StatStrip({ stats }) {
+  return (
+    <div className="ck-statrow">
+      {stats.map((s, i) => (
+        <Reveal key={i} delay={i * 90}>
+          <div className="ck-stat__num">{s.num}</div>
+          <div className="ck-stat__label">{s.label}</div>
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
 /* Stroke icons: drawn inline so no icon font dependency */
 function Icon({ name, size = 18, stroke = 1.75, style }) {
   const paths = {
@@ -621,25 +725,19 @@ function IconTile({ name, accent = 'var(--accent)', size = 20 }) {
 /* NAV + HERO                                                           */
 /* ------------------------------------------------------------------ */
 
-function Logo({ height = 28, onDark = false }) {
-  /* On the espresso nav the tile picks up a thin warm rim so it reads on the
-     dark bar, and the wordmark switches to cream. Footer (light) stays dark. */
-  const tileFill = onDark ? '#221a13' : '#1a1713';
-  const tileStroke = onDark ? '#4a3b2c' : 'none';
-  const wordmark = onDark ? '#f3ead8' : '#20190d';
+function Logo({ height = 28 }) {
   return (
     <a href="#/" aria-label="Checkpoint home"
       style={{ display: 'inline-flex', alignItems: 'center' }}>
       <svg width={height * 5.25} height={height} viewBox="0 0 168 32"
         fill="none" role="img" aria-label="Checkpoint">
         {/* rewind mark: gray disc with a light left-pointing triangle on a dark tile */}
-        <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill={tileFill}
-          stroke={tileStroke} strokeWidth={onDark ? 1 : 0}/>
+        <rect width="32" height="32" rx="8" fill="#1a1713"/>
         <circle cx="13" cy="16" r="8.5" fill="#8c8c8c"/>
         <path d="M9 16L23.5 8V24Z" fill="#dcdcdc" stroke="#dcdcdc"
           strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round"/>
         <text x="44" y="22" fontFamily="Geist, system-ui, sans-serif" fontSize="20"
-          fontWeight="700" letterSpacing="-0.02em" fill={wordmark}>Checkpoint</text>
+          fontWeight="700" letterSpacing="-0.02em" fill="#20190d">Checkpoint</text>
       </svg>
     </a>
   );
@@ -676,7 +774,7 @@ function Nav({ view = 'home' }) {
     <nav className="ck-nav">
       <Container>
         <div className="ck-nav__row">
-          <Logo height={26} onDark />
+          <Logo height={26} />
           <div className="ck-nav__links">
             <a className={`ck-nav__link${view === 'home' ? ' is-active' : ''}`} href="#/">Home</a>
             <a className={`ck-nav__link${onBots ? ' is-active' : ''}`} href="#/ai-bots">AI Bots</a>
@@ -685,6 +783,28 @@ function Nav({ view = 'home' }) {
         </div>
       </Container>
     </nav>
+  );
+}
+
+/* Marquee of engines + a stat strip, the cluely-style proof band under the hero. */
+function HomeProof() {
+  return (
+    <section className="ck-section ck-section--tight">
+      <Container>
+        <Reveal>
+          <div style={{ marginBottom: 20 }}>
+            <Overline>Built for the engines you ship on</Overline>
+          </div>
+        </Reveal>
+        <MarqueeStrip items={['Unreal Engine', 'Unity', 'Godot', 'Source 2', 'GameMaker', 'Bevy', 'Custom engines']} />
+        <div style={{ height: 40 }}></div>
+        <StatStrip stats={[
+          { num: 'Every build', label: 'Agents play each new build automatically, not just milestones.' },
+          { num: '24 / 7', label: 'Always-on coverage across levels, menus, combat, and progression.' },
+          { num: 'Zero scripts', label: 'Nothing to author or maintain. Point Checkpoint at your game and go.' },
+        ]} />
+      </Container>
+    </section>
   );
 }
 
@@ -755,19 +875,20 @@ function Hero() {
   return (
     <header className="ck-hero">
       <div className="ck-hero__glow"></div>
+      <div className="ck-hero-mesh" aria-hidden="true"></div>
       <Container>
         <div className="ck-hero__grid">
           <div className="ck-hero__copy">
             <Overline>AI playtesting platform</Overline>
-            <h1 className="ck-h-display">
-              An always-on AI playtesting layer for every build.
+            <h1 className="ck-display-xl ck-rise">
+              An always-on AI playtesting layer for <span className="ck-grad-text">every build</span>.
             </h1>
-            <p className="ck-lede" style={{ maxWidth: 520 }}>
+            <p className="ck-lede ck-rise-2" style={{ maxWidth: 520 }}>
               Checkpoint runs multimodal agents that play your game like real players, watching the
               screen, driving keyboard and mouse, and returning structured reports with recordings,
               repro steps, crashes, and balance data. On every build. At scale.
             </p>
-            <div className="ck-hero__ctas">
+            <div className="ck-hero__ctas ck-rise-3">
               <a href="#cta">
                 <Button variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} />}>
                   Book a demo
@@ -1424,18 +1545,19 @@ function HeroBots() {
   return (
     <header className="ck-hero">
       <div className="ck-hero__glow"></div>
+      <div className="ck-hero-mesh" aria-hidden="true"></div>
       <Container>
         <div className="ck-hero__grid">
           <div className="ck-hero__copy">
             <Overline>Checkpoint AI Bots · for game studios</Overline>
-            <h1 className="ck-h-display">
-              You can't tell which one is the bot.
+            <h1 className="ck-display-xl ck-rise">
+              You can't tell which one is the <span className="ck-grad-text">bot</span>.
             </h1>
-            <p className="ck-lede" style={{ maxWidth: 500 }}>
+            <p className="ck-lede ck-rise-2" style={{ maxWidth: 500 }}>
               We train models on real player data to build bots that aim, move, and miss like people.
               Drop them into thin lobbies or empty NPC slots and your players stop noticing.
             </p>
-            <div className="ck-hero__ctas">
+            <div className="ck-hero__ctas ck-rise-3">
               <a href="#/waitlist">
                 <Button variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} />}>
                   Join the waitlist
@@ -1459,6 +1581,28 @@ function HeroBots() {
         </div>
       </Container>
     </header>
+  );
+}
+
+/* Marquee of representative games + a stat strip: the cluely-style proof band. */
+function BotsProof() {
+  return (
+    <section className="ck-section ck-section--tight">
+      <Container>
+        <Reveal>
+          <div style={{ marginBottom: 20 }}>
+            <Overline>The kind of lobbies we fill</Overline>
+          </div>
+        </Reveal>
+        <MarqueeStrip items={['PUBG', 'CS2', 'Valorant', 'Apex Legends', 'Fortnite', 'Rainbow Six', 'Rocket League', 'Overwatch']} />
+        <div style={{ height: 40 }}></div>
+        <StatStrip stats={[
+          { num: 'Casual to Pro', label: 'The full skill curve, learned from real players at every level.' },
+          { num: 'Real time', label: 'Bots react live during the match, not on a fixed script or timer.' },
+          { num: 'Drop-in', label: 'Replaces your existing bot layer with no behavior to hand-code.' },
+        ]} />
+      </Container>
+    </section>
   );
 }
 
@@ -1826,6 +1970,7 @@ function HomeApp({ view }) {
       <Nav view={view} />
       <Splash />
       <Hero />
+      <HomeProof />
       <Problem />
       <HowItWorks />
       <Reports />
@@ -1845,6 +1990,7 @@ function BotsApp({ view }) {
     <React.Fragment>
       <Nav view={view} />
       <HeroBots />
+      <BotsProof />
       <SolutionBots />
       <CTABots />
       <FooterBots />
