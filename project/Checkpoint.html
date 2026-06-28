@@ -304,7 +304,25 @@ img { display: block; max-width: 100%; }
 @media (max-width: 920px) {
   .ck-reports-grid { grid-template-columns: 1fr !important; }
   .ck-cta-grid     { grid-template-columns: 1fr !important; }
+  .ck-solution-grid { grid-template-columns: 1fr !important; }
 }
+
+/* ---- AI Bots page: nav link active state ---------------- */
+.ck-nav__link.is-active { color: var(--accent); }
+
+/* ---- AI Bots page: trace playhead sweep ----------------- */
+/* A faint plum vertical line drifts across the TraceCompare panel,
+   echoing the shimmer/recording motifs. Frozen for reduced-motion. */
+.ck-trace-playhead {
+  animation: ck-trace-sweep var(--dur-shimmer) linear infinite;
+}
+@keyframes ck-trace-sweep {
+  0%   { transform: translateX(0%);   opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .ck-trace-playhead { animation: none; opacity: 0; } }
 
 /* ============================================================
    BEIGE + PLUM THEME
@@ -472,7 +490,7 @@ function IconTile({ name, accent = 'var(--accent)', size = 20 }) {
 
 function Logo({ height = 28 }) {
   return (
-    <a href="#top" aria-label="Checkpoint home"
+    <a href="#/" aria-label="Checkpoint home"
       style={{ display: 'inline-flex', alignItems: 'center' }}>
       <svg width={height * 5.25} height={height} viewBox="0 0 168 32"
         fill="none" role="img" aria-label="Checkpoint">
@@ -497,7 +515,7 @@ function Splash() {
       <div className="ck-splash__dummy" id="splash-dummy" aria-hidden="true"></div>
       <span className="ck-splash__line" aria-hidden="true"></span>
       <div className="ck-splash__inner">
-        <h1 className="ck-splash__title">Checkpoint<br />AI<span className="ck-splash__dot"></span></h1>
+        <h1 className="ck-splash__title">Checkpoint<span className="ck-splash__dot"></span></h1>
         <div className="ck-splash__intro">
           <p className="ck-splash__lead">An always-on AI playtesting layer for every build.</p>
           <p className="ck-splash__sub">
@@ -512,21 +530,19 @@ function Splash() {
   );
 }
 
-function Nav() {
-  const { Button } = CK;
+function Nav({ view = 'home' }) {
+  const onBots = view === 'aibots';
   return (
     <nav className="ck-nav">
       <Container>
         <div className="ck-nav__row">
           <Logo height={26} />
           <div className="ck-nav__links">
-            <a className="ck-nav__link" href="#how">How it works</a>
-            <a className="ck-nav__link" href="#reports">Reports</a>
-            <a className="ck-nav__link" href="#why">Why Checkpoint</a>
+            <a className={`ck-nav__link${onBots ? ' is-active' : ''}`} href="#/ai-bots">AI Bots</a>
           </div>
           <div className="ck-nav__actions">
             <span className="ck-livechip">
-              <span className="ck-live-dot"></span>3 agents running
+              <span className="ck-live-dot"></span>{onBots ? 'live across 14 lobbies' : '3 agents running'}
             </span>
 
           </div>
@@ -1132,14 +1148,758 @@ function Footer() {
   );
 }
 
+/* ================================================================== */
+/* AI BOTS PAGE                                                         */
+/* Checkpoint's second product: human-like bots for multiplayer games. */
+/* Reuses the same nav/footer/telemetry grammar as the home page.      */
+/* ================================================================== */
+
 /* ------------------------------------------------------------------ */
-/* APP MOUNT                                                            */
+/* BOT GLYPHS: bespoke inline SVG, drawn for this page (no icon libs). */
+/* Same 24x24, stroke=currentColor, strokeWidth~1.75 idiom as Icon().  */
+/* ------------------------------------------------------------------ */
+function BotGlyph({ name, size = 20, stroke = 1.75, style }) {
+  const paths = {
+    /* player marker: a caret cursor sitting inside a slot. Identical for
+       humans and bots (that sameness is the whole point of the hero). */
+    marker:   <><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9.5 8.5l5 3.5-5 3.5z" strokeLinejoin="round"/></>,
+    /* waypoint route: an evenly-dotted path with one hard 90° bend. */
+    rails:    <><path d="M4 6h7v12" strokeLinecap="round" strokeDasharray="0.1 3"/><circle cx="11" cy="6" r="1.4" fill="currentColor" stroke="none"/></>,
+    /* stopwatch dial: a needle pinned to one exact tick, with a snap bracket. */
+    stopwatch:<><circle cx="12" cy="13" r="7"/><path d="M12 13l3.2-3.2" strokeLinecap="round"/><path d="M12 6V4M10.5 4h3" strokeLinecap="round"/><path d="M18 7l1-1" strokeLinecap="round"/></>,
+    /* retention curve: a line stepping down to the right, last point open. */
+    churn:    <><path d="M4 6v13h16" strokeLinecap="round"/><path d="M7 9h3v3h3v3h2.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="18.5" cy="15" r="1.3"/></>,
+    /* plug + socket meeting: two facing bracket halves closing a 1px gap. */
+    plug:     <><path d="M4 7v10M9 9.5v5" strokeLinecap="round"/><path d="M4 7h4M4 17h4" strokeLinecap="round"/><path d="M20 7v10M15 9.5v5" strokeLinecap="round"/><path d="M20 7h-4M20 17h-4" strokeLinecap="round"/></>,
+    /* persona sliders: three rails, each with a knob at a different x. */
+    sliders:  <><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round"/><rect x="7" y="5.5" width="3" height="3" rx="0.8"/><rect x="13" y="10.5" width="3" height="3" rx="0.8"/><rect x="9" y="15.5" width="3" height="3" rx="0.8"/></>,
+    /* live signal: a filled dot with two concentric broadcast arcs. */
+    signal:   <><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7" strokeLinecap="round"/></>,
+    /* lobby grid: 2x4 slots, some empty, some filling in. */
+    lobby:    <><rect x="3.5" y="6" width="6.5" height="5" rx="1.2"/><rect x="14" y="6" width="6.5" height="5" rx="1.2"/><rect x="3.5" y="13" width="6.5" height="5" rx="1.2"/><rect x="14" y="13" width="6.5" height="5" rx="1.2" fill="currentColor" fillOpacity="0.18"/></>,
+    /* launch flag on a short mast: a "day one" mark. */
+    launch:   <><path d="M7 4v16" strokeLinecap="round"/><path d="M7 5h9l-2.2 3L16 11H7z" strokeLinejoin="round"/></>,
+    /* globe: one meridian arc and a highlighted region dot. */
+    globe:    <><circle cx="12" cy="12" r="8"/><path d="M12 4c-3 2.4-3 13.6 0 16M12 4c3 2.4 3 13.6 0 16M4.5 9.5h15M4.5 14.5h15" strokeLinecap="round"/><circle cx="15.5" cy="9.5" r="1.5" fill="currentColor" stroke="none"/></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={stroke} style={style} aria-hidden="true">
+      {paths[name] || null}
+    </svg>
+  );
+}
+
+/* A small noisy polyline, deterministic per seed, for the micro-traces.
+   Same noise character for humans and bots so the rows read identically. */
+function tracePoints(seed, n, w, h) {
+  let s = seed * 9301 + 49297;
+  const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * w;
+    const y = h / 2 + (rnd() - 0.5) * h * 0.82;
+    pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  return pts.join(' ');
+}
+
+/* ------------------------------------------------------------------ */
+/* LOBBY STRIP: the hero's signature proof object.                      */
+/* A match roster rendered as telemetry. Five humans, three bots,       */
+/* visually indistinguishable. One bot row is revealed inline.          */
+/* ------------------------------------------------------------------ */
+function LobbyStrip() {
+  const { Card, Tag } = CK;
+  const rows = [
+    { call: 'vanth_07',   seed: 17, bot: false },
+    { call: 'k>proxy',    seed: 42, bot: true  },
+    { call: 'lowping_44', seed: 73, bot: false },
+    { call: 'm1lk',       seed: 28, bot: false },
+    { call: 'qewtz',      seed: 91, bot: true, reveal: true },
+    { call: 'ghostlayer', seed: 56, bot: false },
+    { call: 's4lt',       seed: 64, bot: true  },
+    { call: 'bunnyhop99', seed: 39, bot: false },
+  ];
+  return (
+    <Card padded={false} style={{ width: '100%' }}>
+      {/* recording-style header bar */}
+      <div className="ck-recording__bar">
+        <span className="ck-live-dot" style={{ background: 'var(--accent)' }}></span>
+        <span>lobby · ranked · 8 / 8 filled</span>
+        <span style={{ marginLeft: 'auto' }}>region: EU-W</span>
+      </div>
+
+      <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {rows.map((r) => (
+          <div key={r.call} style={{
+            display: 'grid', gridTemplateColumns: '16px 1fr auto', gap: 8, alignItems: 'center',
+            padding: '10px 12px', borderRadius: 'var(--radius-md)',
+            background: 'var(--surface-inset)', border: '1px solid var(--border-hairline)',
+          }}>
+            <BotGlyph name="marker" size={16} stroke={1.6}
+              style={{ color: 'var(--text-secondary)' }} />
+            <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span className="ck-mono" style={{ fontSize: 'var(--fs-small)', color: 'var(--text-body)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {r.call}
+              </span>
+              {r.reveal && (
+                <span className="ck-mono" style={{
+                  fontSize: 'var(--fs-micro)', letterSpacing: 'var(--tracking-caps)',
+                  textTransform: 'uppercase', color: 'var(--accent)',
+                  borderBottom: '1px solid color-mix(in oklab, var(--accent) 45%, transparent)',
+                  alignSelf: 'flex-start', paddingBottom: 1,
+                }}>
+                  checkpoint bot
+                </span>
+              )}
+            </span>
+            {/* micro-trace sparkline: same noise for humans and the bot */}
+            <svg width="64" height="18" viewBox="0 0 64 18" fill="none" aria-hidden="true"
+              style={{ flex: 'none' }}>
+              <polyline points={tracePoints(r.seed, 9, 64, 18)} fill="none"
+                stroke={r.reveal ? 'var(--accent)' : 'var(--text-muted)'}
+                strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        ))}
+      </div>
+
+      {/* panel footer: tag row, like LiveRunPanel */}
+      <div style={{ padding: '11px 16px', borderTop: '1px solid var(--border-hairline)',
+        background: 'var(--surface-panel)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Tag>behavior-cloned</Tag>
+        <Tag>live inference</Tag>
+        <Tag>casual → competitive</Tag>
+      </div>
+
+      <div style={{ padding: '0 16px 14px' }}>
+        <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
+          3 of these 8 are bots
+        </span>
+      </div>
+    </Card>
+  );
+}
+
+function HeroBots() {
+  const { Button } = CK;
+  return (
+    <header className="ck-hero">
+      <div className="ck-hero__glow"></div>
+      <Container>
+        <div className="ck-hero__grid">
+          <div className="ck-hero__copy">
+            <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
+              New from Checkpoint, alongside our AI playtesting product
+            </span>
+            <Overline>Checkpoint AI Bots · for game studios</Overline>
+            <h1 className="ck-h-display">
+              You can't tell which one is the bot.
+            </h1>
+            <p className="ck-lede" style={{ maxWidth: 520 }}>
+              The same Checkpoint that plays your game like real players now builds bots that do too.
+              They aim, rotate, push, hesitate, and miss the way humans do, because they learned from
+              humans. Drop them into thin lobbies and empty NPC slots, and your players stop noticing
+              the difference.
+            </p>
+            <div className="ck-hero__ctas">
+              <a href="#cta">
+                <Button variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} />}>
+                  Book a demo
+                </Button>
+              </a>
+              <a href="#solution">
+                <Button variant="secondary" size="lg" iconLeft={<Icon name="play" size={15} />}>
+                  See how it plays
+                </Button>
+              </a>
+            </div>
+            <div className="ck-hero__trust">
+              <span>Drop-in integration</span>
+              <span className="dot"></span>
+              <span>Trained on real play</span>
+              <span className="dot"></span>
+              <span>Runs live in-match</span>
+            </div>
+          </div>
+          <Reveal delay={80}><LobbyStrip /></Reveal>
+        </div>
+      </Container>
+    </header>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* PROBLEM: scripted bots give themselves away.                        */
+/* ------------------------------------------------------------------ */
+function ProblemBots() {
+  const { Card } = CK;
+  const items = [
+    {
+      glyph: 'rails',
+      title: 'They move on rails',
+      body: 'Scripted bots follow fixed paths and pre-baked decisions. The motion is too clean and too repeatable, and it never looks like a person making a call under pressure.',
+    },
+    {
+      glyph: 'stopwatch',
+      title: 'They react like a stopwatch',
+      body: 'Fixed reaction windows and perfect or perfectly bad aim give them away. Real players have nerves, latency, and bad days. Scripts have none of that.',
+    },
+    {
+      glyph: 'churn',
+      title: 'Players notice, then leave',
+      body: 'Obvious bots break immersion in the moment players are deciding whether to stay. Thin lobbies turn into worse reviews, lower retention, and faster session drop-off.',
+    },
+  ];
+  return (
+    <section className="ck-section ck-band-sunken">
+      <Container>
+        <Reveal>
+          <SectionHead
+            overline="The tell"
+            title="Every player can spot a scripted bot in seconds."
+            lede="When a lobby is thin, studios pad it with bots. The trouble is the bots they have are rule-based. They walk the same lines, peek the same angles, and react on a timer. Players clock them instantly, and a match full of obvious bots is a match players quit."
+          />
+        </Reveal>
+        <div className="ck-grid-3" style={{ marginTop: 48 }}>
+          {items.map((it, i) => (
+            <Reveal key={it.title} delay={i * 90}>
+              <Card style={{ height: '100%' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: 40, height: 40, borderRadius: 'var(--radius-md)',
+                    background: 'var(--surface-inset)', border: '1px solid var(--border-subtle)',
+                    color: 'var(--warning)', flex: 'none',
+                  }}>
+                    <BotGlyph name={it.glyph} size={20} />
+                  </span>
+                  <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-semibold)',
+                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)' }}>
+                    {it.title}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--fs-body)', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
+                    {it.body}
+                  </p>
+                </div>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+        <Reveal delay={120}>
+          <div style={{ marginTop: 28 }}>
+            <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
+              the bot gap is a known, unsolved pain across PvP titles
+            </span>
+          </div>
+        </Reveal>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* TRACE COMPARE: the solution's signature proof.                      */
+/* Two stacked behavior-trace lanes (player vs. bot) sharing the same   */
+/* statistical character. A faint plum playhead sweeps across.          */
+/* ------------------------------------------------------------------ */
+function TraceLane({ label, seed, accent }) {
+  const W = 360, H = 90;
+  const pts = tracePoints(seed, 13, W, H).split(' ').map((p) => p.split(',').map(Number));
+  const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+  /* a couple of "decision point" markers along the path */
+  const marks = [pts[3], pts[7], pts[10]];
+  return (
+    <div style={{ position: 'relative', padding: '12px 14px' }}>
+      <span className="ck-mono" style={{
+        position: 'absolute', top: 10, left: 14, zIndex: 2,
+        fontSize: 'var(--fs-micro)', letterSpacing: 'var(--tracking-caps)',
+        textTransform: 'uppercase', color: accent,
+      }}>{label}</span>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="92" fill="none"
+        preserveAspectRatio="none" aria-hidden="true" style={{ display: 'block' }}>
+        {/* instrument gridlines */}
+        {[0.25, 0.5, 0.75].map((g) => (
+          <line key={g} x1="0" y1={H * g} x2={W} y2={H * g}
+            stroke="var(--border-hairline)" strokeWidth="1" />
+        ))}
+        {[0.25, 0.5, 0.75].map((g) => (
+          <line key={'v' + g} x1={W * g} y1="0" x2={W * g} y2={H}
+            stroke="var(--border-hairline)" strokeWidth="1" />
+        ))}
+        <path d={d} stroke={accent} strokeWidth="1.5"
+          strokeLinecap="round" strokeLinejoin="round" />
+        {marks.map((m, i) => (
+          <circle key={i} cx={m[0]} cy={m[1]} r="2.2" fill="var(--surface-inset)"
+            stroke={accent} strokeWidth="1.25" />
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function TraceCompare() {
+  return (
+    <div className="ck-recording">
+      <div className="ck-recording__bar">
+        <Icon name="target" size={13} style={{ color: 'var(--accent)' }} />
+        <span>behavior trace · which is the human?</span>
+        <span style={{ marginLeft: 'auto' }}>00:00 → 00:30</span>
+      </div>
+      <div style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* sweeping playhead, respects prefers-reduced-motion via the class */}
+        <div className="ck-trace-playhead" aria-hidden="true" style={{
+          position: 'absolute', top: 0, bottom: 0, left: 0, width: 2,
+          background: 'color-mix(in oklab, var(--accent) 55%, transparent)',
+          pointerEvents: 'none', zIndex: 1,
+        }}></div>
+        <TraceLane label="player" seed={31} accent="var(--text-secondary)" />
+        <div className="ck-divider"></div>
+        <TraceLane label="checkpoint bot" seed={77} accent="var(--accent)" />
+      </div>
+      {/* match-on-distribution stats: qualitative, honest, never fabricated */}
+      <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border-hairline)',
+        background: 'var(--surface-panel)', display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+        <CK.Metric label="reaction (ms)" value="match" />
+        <CK.Metric label="aim error" value="human-like" level="healthy" />
+        <CK.Metric label="route variety" value="high" level="healthy" />
+      </div>
+    </div>
+  );
+}
+
+/* Spec sheet: reuses the ObjectiveComposer inset-frame idiom. */
+function BotSpec() {
+  const rows = [
+    'Aim and recoil control with human-shaped error',
+    'Movement, peeking, and rotation timing',
+    'Decision-making under pressure and incomplete info',
+    'The full skill curve, casual through competitive',
+  ];
+  return (
+    <div style={{
+      background: 'var(--surface-inset)', border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-md)', overflow: 'hidden',
+    }}>
+      <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-hairline)',
+        background: 'var(--surface-panel)' }}>
+        <span className="ck-overline">what it models · learned, not scripted</span>
+      </div>
+      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
+        {rows.map((o, i) => (
+          <div key={i} style={{
+            display: 'grid', gridTemplateColumns: '20px 1fr', gap: 8, alignItems: 'baseline',
+            fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-small)',
+            color: 'var(--text-body)', lineHeight: 1.45,
+          }}>
+            <span style={{ color: 'var(--accent)' }}>{String(i + 1).padStart(2, '0')}</span>
+            <span>{o}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SolutionBots() {
+  return (
+    <section className="ck-section" id="solution">
+      <Container>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 24, alignItems: 'start' }}
+          className="ck-solution-grid">
+
+          {/* left: the proof */}
+          <Reveal>
+            <TraceCompare />
+          </Reveal>
+
+          {/* right: the argument */}
+          <Reveal delay={90}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <SectionHead
+                overline="The fix"
+                title="Bots that learned from the people they replace."
+                lede="Checkpoint trains machine learning models on large datasets of real player input: how people aim, move, rotate, time their pushes, and make mistakes. The result is a bot that reproduces the full spread of human play, from a casual filling time to a competitive player closing out a round."
+              />
+              <p style={{ margin: 0, fontSize: 'var(--fs-body)', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
+                Because the behavior is learned, not scripted, the bots adapt to the moment instead of
+                replaying a route. There is no playbook to memorize and no tell to find. They fill an
+                empty lobby slot or an NPC role and read as just another player in the match.
+              </p>
+              <BotSpec />
+            </div>
+          </Reveal>
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* HOW IT WORKS: drop-in integration.                                  */
+/* ------------------------------------------------------------------ */
+function PersonaPicker() {
+  return (
+    <div style={{
+      background: 'var(--surface-inset)', border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-md)', overflow: 'hidden', marginTop: 'auto',
+    }}>
+      <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-hairline)',
+        background: 'var(--surface-panel)' }}>
+        <span className="ck-overline">persona mix</span>
+      </div>
+      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
+        {[['casual', '60%'], ['competitive', '30%'], ['pro', '10%']].map(([label, pct]) => (
+          <div key={label} style={{
+            display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'baseline',
+            fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-small)',
+            color: 'var(--text-body)', lineHeight: 1.45,
+          }}>
+            <span>{label}</span>
+            <span style={{ color: 'var(--accent)' }}>{pct}</span>
+          </div>
+        ))}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-small)', color: 'var(--text-muted)',
+        }}>
+          add persona
+          <span style={{ width: 7, height: 15, background: 'var(--accent)',
+            display: 'inline-block', borderRadius: 1 }} className="ck-live-dot"></span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HowItWorksBots() {
+  const { Card, StatusPill } = CK;
+  const steps = [
+    {
+      n: '01', glyph: 'plug',
+      title: 'Connect your game',
+      body: 'We integrate with how your match already spawns bots. Checkpoint takes the slot your scripted bot used to fill, so there is no new system for your team to babysit.',
+    },
+    {
+      n: '02', glyph: 'sliders',
+      title: 'Choose personas and skill',
+      body: 'Set the mix you want, from casual lobby-fillers to competitive opponents, and the regions and game modes they should populate. Describe the player you want and the bots match it.',
+    },
+    {
+      n: '03', glyph: 'signal',
+      title: 'Go live in real matches',
+      body: 'The bots run during live play, reacting in real time as the match unfolds. They fill thin lobbies and NPC roles and behave like the players around them.',
+    },
+  ];
+  return (
+    <section className="ck-section" id="how">
+      <Container>
+        <Reveal>
+          <SectionHead
+            overline="How it works"
+            title="A drop-in replacement for the bots you already run."
+            lede="Checkpoint slots into the place your current bot system lives. You point it at your game, pick the personas and skill range you want, and let it run. There is no behavior tree to author and nothing to hand-tune."
+          />
+        </Reveal>
+        <div className="ck-steps" style={{ marginTop: 48 }}>
+          {steps.map((s, i) => (
+            <Reveal key={s.n} delay={i * 90}>
+              <Card style={{ height: '100%' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: 40, height: 40, borderRadius: 'var(--radius-md)',
+                      background: 'var(--surface-inset)', border: '1px solid var(--border-subtle)',
+                      color: 'var(--accent)', flex: 'none',
+                    }}>
+                      <BotGlyph name={s.glyph} size={20} />
+                    </span>
+                    <span className="ck-stepnum">{s.n}</span>
+                  </div>
+                  <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-semibold)',
+                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)' }}>
+                    {s.title}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--fs-body)', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
+                    {s.body}
+                  </p>
+                  {i === 0 && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '10px 12px', borderRadius: 'var(--radius-md)',
+                      background: 'var(--surface-inset)', border: '1px dashed var(--border-strong)',
+                      fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)',
+                      color: 'var(--text-muted)', marginTop: 'auto',
+                    }}>
+                      <BotGlyph name="plug" size={15} style={{ color: 'var(--accent)' }} />
+                      engine: any · input: native
+                    </div>
+                  )}
+                  {i === 1 && <PersonaPicker />}
+                  {i === 2 && (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto' }}>
+                      {[['lobby-eu', 'running'], ['lobby-na', 'running'], ['lobby-sea', 'queued'], ['npc-coop', 'running']].map(([id, st]) => (
+                        <StatusPill key={id} status={st}>{id}</StatusPill>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* WHO IT'S FOR: target studios.                                       */
+/* ------------------------------------------------------------------ */
+function WhoItsFor() {
+  const { Card } = CK;
+  const cols = [
+    {
+      label: 'indie & AA multiplayer', accent: 'var(--info)', glyph: 'lobby',
+      title: 'Live games with thin queues',
+      points: [
+        'Fill matches the moment a lobby is short, not minutes later',
+        'Keep match quality high when the playerbase is small',
+        'Replace a scripted bot layer you never had time to perfect',
+      ],
+    },
+    {
+      label: 'new multiplayer titles', accent: 'var(--accent)', glyph: 'launch',
+      title: 'Real opponents from day one',
+      points: [
+        'Ship with NPC opponents that feel like players at launch',
+        'Avoid the cold-start problem before your community exists',
+        'Tune difficulty by persona instead of hand-coding AI',
+      ],
+    },
+    {
+      label: 'regional & off-peak', accent: 'var(--healthy)', glyph: 'globe',
+      title: 'Queues that fall apart by region or hour',
+      points: [
+        'Hold up off-peak hours and smaller regions',
+        'Stop matchmaking from stalling where players are sparse',
+        'Give every region a full, believable lobby',
+      ],
+    },
+  ];
+  return (
+    <section className="ck-section ck-band-sunken" id="who">
+      <Container>
+        <Reveal>
+          <SectionHead
+            overline="Who it's for"
+            title="Built for studios where empty lobbies are a real problem."
+            center maxWidth={760}
+          />
+        </Reveal>
+        <div className="ck-compare" style={{ marginTop: 48 }}>
+          {cols.map((c, i) => (
+            <Reveal key={c.label} delay={i * 90}>
+              <Card accent={c.accent} style={{ height: '100%' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: 40, height: 40, borderRadius: 'var(--radius-md)',
+                      background: 'var(--surface-inset)', border: '1px solid var(--border-subtle)',
+                      color: c.accent, flex: 'none',
+                    }}>
+                      <BotGlyph name={c.glyph} size={20} />
+                    </span>
+                    <span className="ck-compare__label">{c.label}</span>
+                  </div>
+                  <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-semibold)',
+                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)', lineHeight: 1.25 }}>
+                    {c.title}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 2 }}>
+                    {c.points.map((p, j) => (
+                      <div key={j} style={{ display: 'grid', gridTemplateColumns: '18px 1fr', gap: 9, alignItems: 'start' }}>
+                        <Icon name="check" size={15} style={{ color: c.accent, marginTop: 2 }} />
+                        <span style={{ fontSize: 'var(--fs-small)', lineHeight: 1.5, color: 'var(--text-secondary)' }}>{p}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* WHY NOW: the timing argument, on the roadmap rail.                  */
+/* ------------------------------------------------------------------ */
+function WhyNow() {
+  const reasons = [
+    {
+      tag: 'Methods', pin: 'var(--accent)', live: true,
+      title: 'Behavior cloning works at scale',
+      body: 'Learning from real player inputs, plus reinforcement on top, now produces agents that hold up in real matches, not just benchmarks.',
+    },
+    {
+      tag: 'Cost', pin: 'var(--info)',
+      title: 'Inference is finally cheap enough',
+      body: 'Running learned bots in real time during a live match is affordable now, so this can ship in production, not just a lab.',
+    },
+    {
+      tag: 'Expectations', pin: 'var(--healthy)',
+      title: 'Players hold the bar higher',
+      body: 'Game quality expectations are at an all-time high. A bad bot gets called out in chat and in reviews the same day.',
+    },
+    {
+      tag: 'Open lane', pin: 'var(--text-muted)',
+      title: 'No one owns this category',
+      body: 'Studios hand-roll bots in-house or live with scripted ones. There is no focused vendor making human-like bots a studio can just buy. We already work with studios on playtesting, so building the bots layer for the same teams is a natural next step.',
+    },
+  ];
+  return (
+    <section className="ck-section" id="why-now">
+      <Container>
+        <Reveal>
+          <SectionHead
+            overline="Why now"
+            title="The pieces to do this well only recently came together."
+            lede="Human-like game agents used to be a research demo. The methods, the cost curve, and the bar players hold studios to have all moved at once, and nobody is squarely building commercial-grade bots for studios."
+          />
+        </Reveal>
+        <Reveal delay={80}>
+          <div className="ck-roadmap" style={{ marginTop: 52 }}>
+            {reasons.map((p, i) => (
+              <div key={i} className="ck-roadmap__item">
+                <div className="ck-roadmap__node">
+                  <span
+                    className={`ck-roadmap__pin${p.live ? ' ck-live-dot' : ''}`}
+                    style={{ background: p.pin }}>
+                  </span>
+                  {i < reasons.length - 1 && <span className="ck-roadmap__line"></span>}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span className="ck-mono" style={{
+                    fontSize: 'var(--fs-micro)', letterSpacing: 'var(--tracking-caps)',
+                    textTransform: 'uppercase',
+                    color: p.live ? 'var(--accent)' : 'var(--text-muted)',
+                  }}>{p.tag}</span>
+                  <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 'var(--fw-semibold)',
+                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)', lineHeight: 1.25 }}>
+                    {p.title}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 'var(--fs-small)', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                    {p.body}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </Container>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* CTA: try to spot it.                                                */
+/* ------------------------------------------------------------------ */
+function CTABots() {
+  const { Button, Input } = CK;
+  return (
+    <section className="ck-section ck-section--tight" id="cta">
+      <Container>
+        <Reveal>
+          <div className="ck-cta">
+            <div style={{
+              position: 'relative', zIndex: 1,
+              display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40, alignItems: 'center',
+            }} className="ck-cta-grid">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'flex-start' }}>
+                <Overline>Get started</Overline>
+                <h2 className="ck-h-section" style={{ maxWidth: 460 }}>
+                  Put a Checkpoint bot in your game and try to spot it.
+                </h2>
+                <p className="ck-lede" style={{ maxWidth: 440 }}>
+                  Book a demo and we'll drop our bots into a build of yours. Play a few matches, watch
+                  the lobby, and see if you can tell which players are ours. If you already run
+                  Checkpoint for playtesting, this is the same team, one more product.
+                </p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="ck-cta__form">
+                  <Input placeholder="you@studio.com" type="email" style={{ flex: '1 1 200px' }} />
+                  <Button variant="primary" size="md" disabled>
+                    Coming soon
+                  </Button>
+                </div>
+                <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
+                  Works with your build · your data stays yours · no scripted behavior to maintain
+                </span>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </Container>
+    </section>
+  );
+}
+
+function FooterBots() {
+  return (
+    <footer className="ck-footer">
+      <Container>
+        <div className="ck-footer__row">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 280 }}>
+            <Logo height={24} />
+            <p style={{ margin: 0, fontSize: 'var(--fs-small)', lineHeight: 1.5, color: 'var(--text-muted)' }}>
+              Human-like bots for multiplayer games.
+            </p>
+          </div>
+        </div>
+        <div className="ck-divider"></div>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+          padding: '20px 0 36px',
+          fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text-muted)',
+        }}>
+          <span>© 2026 Checkpoint, Inc.</span>
+          <span style={{ display: 'flex', gap: 24 }}>
+            <a href="#how">How it works</a>
+            <a href="#who">Who it's for</a>
+            <a href="#cta">Get started</a>
+          </span>
+        </div>
+      </Container>
+    </footer>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* APP MOUNT + HASH ROUTING                                            */
 /* ------------------------------------------------------------------ */
 
-function App() {
+/* Routes are distinguished from in-page anchors by a leading "#/".
+   '#/ai-bots' → the bots page; any other '#/...' → home; a plain
+   anchor like '#how' returns null so native scrolling is untouched. */
+function parseRoute(hash) {
+  if (hash === '#/ai-bots') return 'aibots';
+  if (hash.indexOf('#/') === 0) return 'home';
+  return null;
+}
+
+function HomeApp({ view }) {
   return (
     <React.Fragment>
-      <Nav />
+      <Nav view={view} />
       <Splash />
       <Hero />
       <Problem />
@@ -1151,6 +1911,39 @@ function App() {
       <Footer />
     </React.Fragment>
   );
+}
+
+function BotsApp({ view }) {
+  return (
+    <React.Fragment>
+      <Nav view={view} />
+      <HeroBots />
+      <ProblemBots />
+      <SolutionBots />
+      <HowItWorksBots />
+      <WhoItsFor />
+      <WhyNow />
+      <CTABots />
+      <FooterBots />
+    </React.Fragment>
+  );
+}
+
+function App() {
+  const [view, setView] = useState(() => parseRoute(window.location.hash) || 'home');
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const r = parseRoute(window.location.hash);
+      if (r) setView(r);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  useEffect(() => { window.scrollTo(0, 0); }, [view]);
+
+  return view === 'aibots' ? <BotsApp view={view} /> : <HomeApp view={view} />;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
