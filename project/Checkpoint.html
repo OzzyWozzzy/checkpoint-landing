@@ -93,9 +93,11 @@ img { display: block; max-width: 100%; }
 /* ---- Nav ------------------------------------------------- */
 .ck-nav {
   position: sticky; top: 0; z-index: 50;
-  background: color-mix(in oklab, var(--bg-app) 82%, transparent);
+  /* darker frosted dark-beige bar so the fixed nav reads as distinct from the page */
+  background: color-mix(in oklab, var(--beige-dark) 90%, transparent);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--border-hairline);
+  border-bottom: 1px solid var(--beige-dark-deep);
+  box-shadow: 0 8px 24px -14px rgba(40, 28, 12, 0.5);
 }
 .ck-nav__row {
   height: calc(var(--nav-h) - 1px); /* + the nav's 1px bottom border = --nav-h */
@@ -103,11 +105,12 @@ img { display: block; max-width: 100%; }
 }
 .ck-nav__links { display: flex; align-items: center; gap: 28px; }
 .ck-nav__link {
-  font-size: var(--fs-small); color: var(--text-secondary);
+  font-size: var(--fs-small); color: var(--beige-dark-ink);
   font-weight: var(--fw-medium); letter-spacing: var(--tracking-snug);
-  transition: color var(--dur-fast) var(--ease-out);
+  border-bottom: 2px solid transparent;
+  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
-.ck-nav__link:hover { color: var(--text-strong); }
+.ck-nav__link:hover { color: var(--text-max); border-bottom-color: color-mix(in oklab, var(--accent) 50%, transparent); }
 .ck-nav__actions { display: flex; align-items: center; gap: 10px; }
 @media (max-width: 860px) { .ck-nav__links { display: none; } }
 
@@ -317,7 +320,7 @@ img { display: block; max-width: 100%; }
 }
 
 /* ---- AI Bots page: nav link active state ---------------- */
-.ck-nav__link.is-active { color: var(--accent); }
+.ck-nav__link.is-active { color: var(--text-max); border-bottom-color: var(--accent); }
 
 /* ---- Second scheme colour: dark-beige band -------------- */
 /* A deeper warm tone behind the "what we do" section. Text on the band is
