@@ -108,6 +108,14 @@ img { display: block; max-width: 100%; }
   transition: color var(--dur-fast) var(--ease-out);
 }
 .ck-nav__link:hover { color: var(--text-strong); }
+.ck-nav__cta {
+  display: inline-flex; align-items: center;
+  background: var(--accent); color: var(--lime-on);
+  padding: 9px 18px; border-radius: var(--radius-pill);
+  font-size: var(--fs-small); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-snug);
+  transition: background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.ck-nav__cta:hover { background: var(--accent-hover); transform: translateY(-1px); }
 .ck-nav__actions { display: flex; align-items: center; gap: 10px; }
 @media (max-width: 860px) { .ck-nav__links { display: none; } }
 
@@ -778,7 +786,7 @@ function Nav({ view = 'home' }) {
           <div className="ck-nav__links">
             <a className={`ck-nav__link${view === 'home' ? ' is-active' : ''}`} href="#/">Home</a>
             <a className={`ck-nav__link${onBots ? ' is-active' : ''}`} href="#/ai-bots">AI Bots</a>
-            <a className={`ck-nav__link${view === 'waitlist' ? ' is-active' : ''}`} href="#/waitlist">Waitlist</a>
+            <a className="ck-nav__cta" href="#/waitlist">Join Waitlist</a>
           </div>
         </div>
       </Container>
@@ -1976,7 +1984,6 @@ function HomeApp({ view }) {
       <Reports />
       <Why />
       <Roadmap />
-      <CTA />
       <Footer />
     </React.Fragment>
   );
@@ -2046,15 +2053,33 @@ const MODEL_URL = 'crash-dummy/crush_dummy.glb';
 const TEX_BASE  = 'crash-dummy/textures/crush_dummy_default_';
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// wait for React to mount the hero container, then boot. Uses setTimeout
-// (not rAF) so it still fires if the tab is backgrounded during load.
-(function waitFor(tries) {
+// (Re)create the hero dummy whenever the home view mounts its #splash-dummy
+// container, and tear it down when navigation removes it. This is what makes
+// the ragdoll come back after you visit another page and return home, instead
+// of leaving an empty slot (the container is a fresh DOM node each remount).
+let dummyInstance = null; // { el, stop }
+function syncHeroDummy() {
   const el = document.getElementById('splash-dummy');
-  if (el) { try { startHeroDummy(el); } catch (e) { console.error('hero dummy failed', e); } return; }
-  if (tries > 0) setTimeout(() => waitFor(tries - 1), 50);
+  if (el) {
+    if (dummyInstance && dummyInstance.el === el) return; // already running on this node
+    if (dummyInstance) { try { dummyInstance.stop(); } catch (e) {} dummyInstance = null; }
+    try { dummyInstance = { el, stop: startHeroDummy(el) }; }
+    catch (e) { console.error('hero dummy failed', e); }
+  } else if (dummyInstance) {
+    try { dummyInstance.stop(); } catch (e) {}
+    dummyInstance = null;
+  }
+}
+// React adds/removes the container deep inside #root, so watch the subtree.
+new MutationObserver(syncHeroDummy).observe(document.body, { childList: true, subtree: true });
+// Initial boot: retry briefly (setTimeout, not rAF) until React has mounted.
+(function boot(tries) {
+  syncHeroDummy();
+  if (!dummyInstance && tries > 0) setTimeout(() => boot(tries - 1), 50);
 })(200);
 
 function startHeroDummy(container) {
+  let running = true;
   const ONE = new THREE.Vector3(1, 1, 1);
   const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
@@ -2333,14 +2358,15 @@ function startHeroDummy(container) {
   const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2(-2, -2);
   let haveCursor = false, moveX = 0, moveY = 0, cursorSpeed = 0;
   const IMPULSE_K = 0.16, SPEED_CLAMP = 90, SPIN = 2.8, SPIN_MAXW = 26;
-  window.addEventListener('mousemove', (e) => {
+  function onMouseMove(e) {
     const r = renderer.domElement.getBoundingClientRect();
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) { haveCursor = false; return; }
     ndc.x = ((e.clientX - r.left) / r.width) * 2 - 1;
     ndc.y = -((e.clientY - r.top) / r.height) * 2 + 1;
     moveX = e.movementX || 0; moveY = e.movementY || 0;
     cursorSpeed = Math.sqrt(moveX * moveX + moveY * moveY); haveCursor = true;
-  }, { passive: true });
+  }
+  window.addEventListener('mousemove', onMouseMove, { passive: true });
 
   const _right = new THREE.Vector3(), _up = new THREE.Vector3();
   function tryStrike() {
@@ -2367,6 +2393,7 @@ function startHeroDummy(container) {
   // ---- loop ----
   const clock = new THREE.Clock(), FIXED = 1 / 60; let acc = 0;
   function animate() {
+    if (!running) return;
     requestAnimationFrame(animate);
     let dt = clock.getDelta(); if (dt > 0.1) dt = 0.1;
     tryStrike();
@@ -2376,6 +2403,16 @@ function startHeroDummy(container) {
     driveBones();
     renderer.render(scene, camera);
   }
+
+  // Teardown so the dummy can be cleanly re-created when the home view
+  // remounts its container (navigating away and back).
+  return function stop() {
+    running = false;
+    try { ro.disconnect(); } catch (e) {}
+    try { window.removeEventListener('mousemove', onMouseMove); } catch (e) {}
+    try { renderer.dispose(); } catch (e) {}
+    const c = renderer.domElement; if (c && c.parentNode) c.parentNode.removeChild(c);
+  };
 }
 </script>
 </body>
