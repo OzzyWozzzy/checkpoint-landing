@@ -93,11 +93,11 @@ img { display: block; max-width: 100%; }
 /* ---- Nav ------------------------------------------------- */
 .ck-nav {
   position: sticky; top: 0; z-index: 50;
-  /* darker frosted dark-beige bar so the fixed nav reads as distinct from the page */
-  background: color-mix(in oklab, var(--beige-dark) 90%, transparent);
+  /* frosted espresso bar: warm near-black so the fixed nav reads as distinct */
+  background: color-mix(in oklab, var(--espresso) 92%, transparent);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--beige-dark-deep);
-  box-shadow: 0 8px 24px -14px rgba(40, 28, 12, 0.5);
+  border-bottom: 1px solid var(--espresso-border);
+  box-shadow: 0 10px 28px -16px rgba(20, 14, 8, 0.6);
 }
 .ck-nav__row {
   height: calc(var(--nav-h) - 1px); /* + the nav's 1px bottom border = --nav-h */
@@ -105,12 +105,12 @@ img { display: block; max-width: 100%; }
 }
 .ck-nav__links { display: flex; align-items: center; gap: 28px; }
 .ck-nav__link {
-  font-size: var(--fs-small); color: var(--beige-dark-ink);
+  font-size: var(--fs-small); color: var(--espresso-ink);
   font-weight: var(--fw-medium); letter-spacing: var(--tracking-snug);
   border-bottom: 2px solid transparent;
   transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
-.ck-nav__link:hover { color: var(--text-max); border-bottom-color: color-mix(in oklab, var(--accent) 50%, transparent); }
+.ck-nav__link:hover { color: var(--espresso-ink-hi); border-bottom-color: var(--accent-dim); }
 .ck-nav__actions { display: flex; align-items: center; gap: 10px; }
 @media (max-width: 860px) { .ck-nav__links { display: none; } }
 
@@ -320,7 +320,7 @@ img { display: block; max-width: 100%; }
 }
 
 /* ---- AI Bots page: nav link active state ---------------- */
-.ck-nav__link.is-active { color: var(--text-max); border-bottom-color: var(--accent); }
+.ck-nav__link.is-active { color: var(--espresso-ink-hi); border-bottom-color: var(--accent-hover); }
 
 /* ---- Second scheme colour: dark-beige band -------------- */
 /* A deeper warm tone behind the "what we do" section. Text on the band is
@@ -497,6 +497,13 @@ button:active { transform: translateY(1px); }
   --beige-dark-ink:  #241d10;  /* readable near-black text on the dark band */
   --beige-dark-sub:  #2f2718;  /* secondary text on the dark band */
 
+  /* espresso: warm brown near-black, the dark anchor for the fixed nav.
+     Pairs with the beige base and keeps plum as the only accent. */
+  --espresso:        #2a2018;
+  --espresso-border: #3c2f24;
+  --espresso-ink:    #e7ddca;  /* muted cream nav text */
+  --espresso-ink-hi: #fbf4ef;  /* bright cream: hover / active nav text */
+
   /* focus ring */
   --ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--accent-dim);
 }
@@ -614,19 +621,25 @@ function IconTile({ name, accent = 'var(--accent)', size = 20 }) {
 /* NAV + HERO                                                           */
 /* ------------------------------------------------------------------ */
 
-function Logo({ height = 28 }) {
+function Logo({ height = 28, onDark = false }) {
+  /* On the espresso nav the tile picks up a thin warm rim so it reads on the
+     dark bar, and the wordmark switches to cream. Footer (light) stays dark. */
+  const tileFill = onDark ? '#221a13' : '#1a1713';
+  const tileStroke = onDark ? '#4a3b2c' : 'none';
+  const wordmark = onDark ? '#f3ead8' : '#20190d';
   return (
     <a href="#/" aria-label="Checkpoint home"
       style={{ display: 'inline-flex', alignItems: 'center' }}>
       <svg width={height * 5.25} height={height} viewBox="0 0 168 32"
         fill="none" role="img" aria-label="Checkpoint">
         {/* rewind mark: gray disc with a light left-pointing triangle on a dark tile */}
-        <rect width="32" height="32" rx="8" fill="#1a1713"/>
+        <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill={tileFill}
+          stroke={tileStroke} strokeWidth={onDark ? 1 : 0}/>
         <circle cx="13" cy="16" r="8.5" fill="#8c8c8c"/>
         <path d="M9 16L23.5 8V24Z" fill="#dcdcdc" stroke="#dcdcdc"
           strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round"/>
         <text x="44" y="22" fontFamily="Geist, system-ui, sans-serif" fontSize="20"
-          fontWeight="700" letterSpacing="-0.02em" fill="#20190d">Checkpoint</text>
+          fontWeight="700" letterSpacing="-0.02em" fill={wordmark}>Checkpoint</text>
       </svg>
     </a>
   );
@@ -663,7 +676,7 @@ function Nav({ view = 'home' }) {
     <nav className="ck-nav">
       <Container>
         <div className="ck-nav__row">
-          <Logo height={26} />
+          <Logo height={26} onDark />
           <div className="ck-nav__links">
             <a className={`ck-nav__link${view === 'home' ? ' is-active' : ''}`} href="#/">Home</a>
             <a className={`ck-nav__link${onBots ? ' is-active' : ''}`} href="#/ai-bots">AI Bots</a>
