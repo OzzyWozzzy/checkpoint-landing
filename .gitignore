@@ -1,0 +1,18 @@
+# Secrets / local env — NEVER commit these
+.env
+.env.local
+.env*.local
+.env*.bak
+*.bak
+config/secret_key
+
+# Vercel CLI local state
+.vercel/.env*
+.vercel/output
+
+# Dependencies (only present if you ever add npm packages)
+node_modules
+
+# OS / editor cruft
+.DS_Store
+*.log

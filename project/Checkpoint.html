@@ -1841,19 +1841,38 @@ function WaitlistPage() {
   const { Button } = CK;
   const [email, setEmail] = useState('');
   const [joined, setJoined] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const busy = React.useRef(false); // sync guard against double-submit
 
   const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
-  const join = (e) => {
+  const join = async (e) => {
     if (e) e.preventDefault();
-    if (!valid) return;
-    /* No backend yet, so the signup is delivered as a prefilled mail to us.
-       This opens the user's mail client without unloading the page, so the
-       confirmation state below still renders. */
-    const href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Waitlist signup')}` +
-      `&body=${encodeURIComponent('Add me to the Checkpoint waitlist: ' + email.trim())}`;
-    window.location.href = href;
-    setJoined(true);
+    if (!valid || busy.current) return;
+    busy.current = true;
+    setSubmitting(true);
+    setError('');
+    /* Adds the email to the Resend Audience via /api/subscribe (the key stays
+       server-side). On success we render the confirmation state below. */
+    try {
+      const resp = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok && data.ok) {
+        setJoined(true);
+      } else {
+        setError(data.error || 'Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      setError('Network error. Please try again, or email us directly.');
+    } finally {
+      busy.current = false;
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -1931,11 +1950,14 @@ function WaitlistPage() {
                         color: 'var(--text-body)', fontFamily: 'var(--font-sans)',
                         fontSize: 'var(--fs-body)', lineHeight: 1.5, outline: 'none',
                       }} />
-                    <Button variant="primary" size="md" onClick={join} disabled={!valid}>
-                      Join the waitlist
+                    <Button variant="primary" size="md" onClick={join} disabled={!valid || submitting}>
+                      {submitting ? 'Joining…' : 'Join the waitlist'}
                     </Button>
-                    <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
-                      Stay tuned for our launch.
+                    <span className="ck-mono" style={{
+                      fontSize: 'var(--fs-caption)',
+                      color: error ? 'var(--critical)' : 'var(--text-muted)',
+                    }}>
+                      {error || 'Stay tuned for our launch.'}
                     </span>
                   </form>
                 )}
