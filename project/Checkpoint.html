@@ -314,6 +314,65 @@ img { display: block; max-width: 100%; }
 /* ---- AI Bots page: nav link active state ---------------- */
 .ck-nav__link.is-active { color: var(--accent); }
 
+/* ---- Second scheme colour: dark-beige band -------------- */
+/* A deeper warm tone behind the "what we do" section. Text on the band is
+   forced to the near-black ink ramp so it stays readable on #9f8c76. */
+.ck-band-beige {
+  background: var(--beige-dark);
+  border-top: 1px solid var(--beige-dark-deep);
+  border-bottom: 1px solid var(--beige-dark-deep);
+}
+.ck-band-beige .ck-h-section,
+.ck-band-beige .ck-h-display { color: var(--beige-dark-ink); }
+.ck-band-beige .ck-lede,
+.ck-band-beige .ck-band-beige__sub { color: var(--beige-dark-sub); }
+.ck-band-beige .ck-overline-accent { color: var(--beige-dark-ink); }
+.ck-band-beige .ck-overline-accent::before { background: var(--accent); }
+.ck-accent-rule-beige { height: 3px; background: var(--beige-dark); border-radius: var(--radius-pill); }
+
+/* ---- Scroll-driven animations (progressive enhancement) --- */
+/* Reference: CSS scroll-driven animations (animation-timeline). They run on
+   the compositor, so they stay smooth, and degrade to "no animation" where
+   unsupported or where the user prefers reduced motion. */
+.ck-scroll-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 200;
+  background: linear-gradient(90deg, var(--accent), var(--beige-dark));
+  transform: scaleX(0); transform-origin: 0 50%; pointer-events: none;
+}
+.ck-sr { opacity: 1; }            /* base state: always visible (no-JS / no-support safe) */
+.ck-parallax { will-change: transform; }
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ck-scroll-progress {
+      animation: ck-progress-grow linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ck-sr {
+      animation: ck-sr-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+    .ck-parallax {
+      animation: ck-parallax-drift linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+  }
+}
+@keyframes ck-progress-grow { to { transform: scaleX(1); } }
+@keyframes ck-sr-rise {
+  from { opacity: 0; transform: translateY(34px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ck-parallax-drift {
+  from { transform: translateY(26px); }
+  to   { transform: translateY(-26px); }
+}
+
 /* ---- AI Bots page: trace playhead sweep ----------------- */
 /* A faint plum vertical line drifts across the TraceCompare panel,
    echoing the shimmer/recording motifs. Frozen for reduced-motion. */
@@ -374,6 +433,16 @@ img { display: block; max-width: 100%; }
   --lime:        #9b3a61;
   --lime-bright: #b34973;
   --lime-on:     #fbf4ef;
+
+  /* second scheme colour: dark beige. A deeper warm neutral used for the
+     "what we do" band, the waitlist accent, and section separators, so the
+     palette reads as two warm tones (light beige + dark beige) under one
+     plum accent. Base #9f8c76 is the canonical "dark beige". */
+  --beige-dark:      #9f8c76;
+  --beige-dark-deep: #6f5f49;  /* borders / hairlines on the dark band */
+  --beige-dark-soft: #b6a892;  /* lighter step, hover / inset on the band */
+  --beige-dark-ink:  #241d10;  /* readable near-black text on the dark band */
+  --beige-dark-sub:  #2f2718;  /* secondary text on the dark band */
 
   /* focus ring */
   --ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--accent-dim);
@@ -544,7 +613,7 @@ function Nav({ view = 'home' }) {
           <div className="ck-nav__links">
             <a className={`ck-nav__link${view === 'home' ? ' is-active' : ''}`} href="#/">Home</a>
             <a className={`ck-nav__link${onBots ? ' is-active' : ''}`} href="#/ai-bots">AI Bots</a>
-            <a className={`ck-nav__link${view === 'contact' ? ' is-active' : ''}`} href="#/contact">Contact</a>
+            <a className={`ck-nav__link${view === 'waitlist' ? ' is-active' : ''}`} href="#/waitlist">Waitlist</a>
           </div>
           <div className="ck-nav__actions">
             <span className="ck-livechip">
@@ -1297,23 +1366,18 @@ function HeroBots() {
       <Container>
         <div className="ck-hero__grid">
           <div className="ck-hero__copy">
-            <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
-              New from Checkpoint, alongside our AI playtesting product
-            </span>
             <Overline>Checkpoint AI Bots · for game studios</Overline>
             <h1 className="ck-h-display">
               You can't tell which one is the bot.
             </h1>
-            <p className="ck-lede" style={{ maxWidth: 520 }}>
-              The same Checkpoint that plays your game like real players now builds bots that do too.
-              They aim, rotate, push, hesitate, and miss the way humans do, because they learned from
-              humans. Drop them into thin lobbies and empty NPC slots, and your players stop noticing
-              the difference.
+            <p className="ck-lede" style={{ maxWidth: 500 }}>
+              We train models on real player data to build bots that aim, move, and miss like people.
+              Drop them into thin lobbies or empty NPC slots and your players stop noticing.
             </p>
             <div className="ck-hero__ctas">
-              <a href="#cta">
+              <a href="#/waitlist">
                 <Button variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} />}>
-                  Book a demo
+                  Join the waitlist
                 </Button>
               </a>
               <a href="#solution">
@@ -1334,75 +1398,6 @@ function HeroBots() {
         </div>
       </Container>
     </header>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* PROBLEM: scripted bots give themselves away.                        */
-/* ------------------------------------------------------------------ */
-function ProblemBots() {
-  const { Card } = CK;
-  const items = [
-    {
-      glyph: 'rails',
-      title: 'They move on rails',
-      body: 'Scripted bots follow fixed paths and pre-baked decisions. The motion is too clean and too repeatable, and it never looks like a person making a call under pressure.',
-    },
-    {
-      glyph: 'stopwatch',
-      title: 'They react like a stopwatch',
-      body: 'Fixed reaction windows and perfect or perfectly bad aim give them away. Real players have nerves, latency, and bad days. Scripts have none of that.',
-    },
-    {
-      glyph: 'churn',
-      title: 'Players notice, then leave',
-      body: 'Obvious bots break immersion in the moment players are deciding whether to stay. Thin lobbies turn into worse reviews, lower retention, and faster session drop-off.',
-    },
-  ];
-  return (
-    <section className="ck-section ck-band-sunken">
-      <Container>
-        <Reveal>
-          <SectionHead
-            overline="The tell"
-            title="Every player can spot a scripted bot in seconds."
-            lede="When a lobby is thin, studios pad it with bots. The trouble is the bots they have are rule-based. They walk the same lines, peek the same angles, and react on a timer. Players clock them instantly, and a match full of obvious bots is a match players quit."
-          />
-        </Reveal>
-        <div className="ck-grid-3" style={{ marginTop: 48 }}>
-          {items.map((it, i) => (
-            <Reveal key={it.title} delay={i * 90}>
-              <Card style={{ height: '100%' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: 40, height: 40, borderRadius: 'var(--radius-md)',
-                    background: 'var(--surface-inset)', border: '1px solid var(--border-subtle)',
-                    color: 'var(--warning)', flex: 'none',
-                  }}>
-                    <BotGlyph name={it.glyph} size={20} />
-                  </span>
-                  <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-semibold)',
-                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)' }}>
-                    {it.title}
-                  </div>
-                  <p style={{ margin: 0, fontSize: 'var(--fs-body)', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
-                    {it.body}
-                  </p>
-                </div>
-              </Card>
-            </Reveal>
-          ))}
-        </div>
-        <Reveal delay={120}>
-          <div style={{ marginTop: 28 }}>
-            <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
-              the bot gap is a known, unsolved pain across PvP titles
-            </span>
-          </div>
-        </Reveal>
-      </Container>
-    </section>
   );
 }
 
@@ -1512,29 +1507,24 @@ function BotSpec() {
 
 function SolutionBots() {
   return (
-    <section className="ck-section" id="solution">
+    <section className="ck-section ck-band-beige" id="solution">
       <Container>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 24, alignItems: 'start' }}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 24, alignItems: 'center' }}
           className="ck-solution-grid">
 
-          {/* left: the proof */}
+          {/* left: the proof (gentle scroll-linked parallax for depth) */}
           <Reveal>
-            <TraceCompare />
+            <div className="ck-parallax"><TraceCompare /></div>
           </Reveal>
 
-          {/* right: the argument */}
+          {/* right: what we do, kept tight */}
           <Reveal delay={90}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div className="ck-sr" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <SectionHead
-                overline="The fix"
-                title="Bots that learned from the people they replace."
-                lede="Checkpoint trains machine learning models on large datasets of real player input: how people aim, move, rotate, time their pushes, and make mistakes. The result is a bot that reproduces the full spread of human play, from a casual filling time to a competitive player closing out a round."
+                overline="What we do"
+                title="Bots that learned from real players."
+                lede="We train ML models on how real players aim, move, and decide, then turn that into bots that play the same way. Casual to competitive, no scripts, no tells."
               />
-              <p style={{ margin: 0, fontSize: 'var(--fs-body)', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
-                Because the behavior is learned, not scripted, the bots adapt to the moment instead of
-                replaying a route. There is no playbook to memorize and no tell to find. They fill an
-                empty lobby slot or an NPC role and read as just another player in the match.
-              </p>
               <BotSpec />
             </div>
           </Reveal>
@@ -1545,281 +1535,10 @@ function SolutionBots() {
 }
 
 /* ------------------------------------------------------------------ */
-/* HOW IT WORKS: drop-in integration.                                  */
-/* ------------------------------------------------------------------ */
-function PersonaPicker() {
-  return (
-    <div style={{
-      background: 'var(--surface-inset)', border: '1px solid var(--border-hairline)',
-      borderRadius: 'var(--radius-md)', overflow: 'hidden', marginTop: 'auto',
-    }}>
-      <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-hairline)',
-        background: 'var(--surface-panel)' }}>
-        <span className="ck-overline">persona mix</span>
-      </div>
-      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
-        {[['casual', '60%'], ['competitive', '30%'], ['pro', '10%']].map(([label, pct]) => (
-          <div key={label} style={{
-            display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'baseline',
-            fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-small)',
-            color: 'var(--text-body)', lineHeight: 1.45,
-          }}>
-            <span>{label}</span>
-            <span style={{ color: 'var(--accent)' }}>{pct}</span>
-          </div>
-        ))}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-small)', color: 'var(--text-muted)',
-        }}>
-          add persona
-          <span style={{ width: 7, height: 15, background: 'var(--accent)',
-            display: 'inline-block', borderRadius: 1 }} className="ck-live-dot"></span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function HowItWorksBots() {
-  const { Card, StatusPill } = CK;
-  const steps = [
-    {
-      n: '01', glyph: 'plug',
-      title: 'Connect your game',
-      body: 'We integrate with how your match already spawns bots. Checkpoint takes the slot your scripted bot used to fill, so there is no new system for your team to babysit.',
-    },
-    {
-      n: '02', glyph: 'sliders',
-      title: 'Choose personas and skill',
-      body: 'Set the mix you want, from casual lobby-fillers to competitive opponents, and the regions and game modes they should populate. Describe the player you want and the bots match it.',
-    },
-    {
-      n: '03', glyph: 'signal',
-      title: 'Go live in real matches',
-      body: 'The bots run during live play, reacting in real time as the match unfolds. They fill thin lobbies and NPC roles and behave like the players around them.',
-    },
-  ];
-  return (
-    <section className="ck-section" id="how">
-      <Container>
-        <Reveal>
-          <SectionHead
-            overline="How it works"
-            title="A drop-in replacement for the bots you already run."
-            lede="Checkpoint slots into the place your current bot system lives. You point it at your game, pick the personas and skill range you want, and let it run. There is no behavior tree to author and nothing to hand-tune."
-          />
-        </Reveal>
-        <div className="ck-steps" style={{ marginTop: 48 }}>
-          {steps.map((s, i) => (
-            <Reveal key={s.n} delay={i * 90}>
-              <Card style={{ height: '100%' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      width: 40, height: 40, borderRadius: 'var(--radius-md)',
-                      background: 'var(--surface-inset)', border: '1px solid var(--border-subtle)',
-                      color: 'var(--accent)', flex: 'none',
-                    }}>
-                      <BotGlyph name={s.glyph} size={20} />
-                    </span>
-                    <span className="ck-stepnum">{s.n}</span>
-                  </div>
-                  <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-semibold)',
-                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)' }}>
-                    {s.title}
-                  </div>
-                  <p style={{ margin: 0, fontSize: 'var(--fs-body)', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
-                    {s.body}
-                  </p>
-                  {i === 0 && (
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '10px 12px', borderRadius: 'var(--radius-md)',
-                      background: 'var(--surface-inset)', border: '1px dashed var(--border-strong)',
-                      fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)',
-                      color: 'var(--text-muted)', marginTop: 'auto',
-                    }}>
-                      <BotGlyph name="plug" size={15} style={{ color: 'var(--accent)' }} />
-                      engine: any · input: native
-                    </div>
-                  )}
-                  {i === 1 && <PersonaPicker />}
-                  {i === 2 && (
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto' }}>
-                      {[['lobby-eu', 'running'], ['lobby-na', 'running'], ['lobby-sea', 'queued'], ['npc-coop', 'running']].map(([id, st]) => (
-                        <StatusPill key={id} status={st}>{id}</StatusPill>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </Reveal>
-          ))}
-        </div>
-      </Container>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* WHO IT'S FOR: target studios.                                       */
-/* ------------------------------------------------------------------ */
-function WhoItsFor() {
-  const { Card } = CK;
-  const cols = [
-    {
-      label: 'indie & AA multiplayer', accent: 'var(--info)', glyph: 'lobby',
-      title: 'Live games with thin queues',
-      points: [
-        'Fill matches the moment a lobby is short, not minutes later',
-        'Keep match quality high when the playerbase is small',
-        'Replace a scripted bot layer you never had time to perfect',
-      ],
-    },
-    {
-      label: 'new multiplayer titles', accent: 'var(--accent)', glyph: 'launch',
-      title: 'Real opponents from day one',
-      points: [
-        'Ship with NPC opponents that feel like players at launch',
-        'Avoid the cold-start problem before your community exists',
-        'Tune difficulty by persona instead of hand-coding AI',
-      ],
-    },
-    {
-      label: 'regional & off-peak', accent: 'var(--healthy)', glyph: 'globe',
-      title: 'Queues that fall apart by region or hour',
-      points: [
-        'Hold up off-peak hours and smaller regions',
-        'Stop matchmaking from stalling where players are sparse',
-        'Give every region a full, believable lobby',
-      ],
-    },
-  ];
-  return (
-    <section className="ck-section ck-band-sunken" id="who">
-      <Container>
-        <Reveal>
-          <SectionHead
-            overline="Who it's for"
-            title="Built for studios where empty lobbies are a real problem."
-            center maxWidth={760}
-          />
-        </Reveal>
-        <div className="ck-compare" style={{ marginTop: 48 }}>
-          {cols.map((c, i) => (
-            <Reveal key={c.label} delay={i * 90}>
-              <Card accent={c.accent} style={{ height: '100%' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      width: 40, height: 40, borderRadius: 'var(--radius-md)',
-                      background: 'var(--surface-inset)', border: '1px solid var(--border-subtle)',
-                      color: c.accent, flex: 'none',
-                    }}>
-                      <BotGlyph name={c.glyph} size={20} />
-                    </span>
-                    <span className="ck-compare__label">{c.label}</span>
-                  </div>
-                  <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-semibold)',
-                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)', lineHeight: 1.25 }}>
-                    {c.title}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 2 }}>
-                    {c.points.map((p, j) => (
-                      <div key={j} style={{ display: 'grid', gridTemplateColumns: '18px 1fr', gap: 9, alignItems: 'start' }}>
-                        <Icon name="check" size={15} style={{ color: c.accent, marginTop: 2 }} />
-                        <span style={{ fontSize: 'var(--fs-small)', lineHeight: 1.5, color: 'var(--text-secondary)' }}>{p}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            </Reveal>
-          ))}
-        </div>
-      </Container>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* WHY NOW: the timing argument, on the roadmap rail.                  */
-/* ------------------------------------------------------------------ */
-function WhyNow() {
-  const reasons = [
-    {
-      tag: 'Methods', pin: 'var(--accent)', live: true,
-      title: 'Behavior cloning works at scale',
-      body: 'Learning from real player inputs, plus reinforcement on top, now produces agents that hold up in real matches, not just benchmarks.',
-    },
-    {
-      tag: 'Cost', pin: 'var(--info)',
-      title: 'Inference is finally cheap enough',
-      body: 'Running learned bots in real time during a live match is affordable now, so this can ship in production, not just a lab.',
-    },
-    {
-      tag: 'Expectations', pin: 'var(--healthy)',
-      title: 'Players hold the bar higher',
-      body: 'Game quality expectations are at an all-time high. A bad bot gets called out in chat and in reviews the same day.',
-    },
-    {
-      tag: 'Open lane', pin: 'var(--text-muted)',
-      title: 'No one owns this category',
-      body: 'Studios hand-roll bots in-house or live with scripted ones. There is no focused vendor making human-like bots a studio can just buy. We already work with studios on playtesting, so building the bots layer for the same teams is a natural next step.',
-    },
-  ];
-  return (
-    <section className="ck-section" id="why-now">
-      <Container>
-        <Reveal>
-          <SectionHead
-            overline="Why now"
-            title="The pieces to do this well only recently came together."
-            lede="Human-like game agents used to be a research demo. The methods, the cost curve, and the bar players hold studios to have all moved at once, and nobody is squarely building commercial-grade bots for studios."
-          />
-        </Reveal>
-        <Reveal delay={80}>
-          <div className="ck-roadmap" style={{ marginTop: 52 }}>
-            {reasons.map((p, i) => (
-              <div key={i} className="ck-roadmap__item">
-                <div className="ck-roadmap__node">
-                  <span
-                    className={`ck-roadmap__pin${p.live ? ' ck-live-dot' : ''}`}
-                    style={{ background: p.pin }}>
-                  </span>
-                  {i < reasons.length - 1 && <span className="ck-roadmap__line"></span>}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <span className="ck-mono" style={{
-                    fontSize: 'var(--fs-micro)', letterSpacing: 'var(--tracking-caps)',
-                    textTransform: 'uppercase',
-                    color: p.live ? 'var(--accent)' : 'var(--text-muted)',
-                  }}>{p.tag}</span>
-                  <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 'var(--fw-semibold)',
-                    color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)', lineHeight: 1.25 }}>
-                    {p.title}
-                  </div>
-                  <p style={{ margin: 0, fontSize: 'var(--fs-small)', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-                    {p.body}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Reveal>
-      </Container>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* CTA: try to spot it.                                                */
 /* ------------------------------------------------------------------ */
 function CTABots() {
-  const { Button, Input } = CK;
+  const { Button } = CK;
   return (
     <section className="ck-section ck-section--tight" id="cta">
       <Container>
@@ -1835,18 +1554,16 @@ function CTABots() {
                   Put a Checkpoint bot in your game and try to spot it.
                 </h2>
                 <p className="ck-lede" style={{ maxWidth: 440 }}>
-                  Book a demo and we'll drop our bots into a build of yours. Play a few matches, watch
-                  the lobby, and see if you can tell which players are ours. If you already run
-                  Checkpoint for playtesting, this is the same team, one more product.
+                  We are onboarding studios in batches. Join the waitlist and we will reach out with a
+                  build you can drop our bots into and test yourself.
                 </p>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div className="ck-cta__form">
-                  <Input placeholder="you@studio.com" type="email" style={{ flex: '1 1 200px' }} />
-                  <Button variant="primary" size="md" disabled>
-                    Coming soon
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
+                <a href="#/waitlist">
+                  <Button variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} />}>
+                    Join the waitlist
                   </Button>
-                </div>
+                </a>
                 <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
                   Works with your build · your data stays yours · no scripted behavior to maintain
                 </span>
@@ -1879,9 +1596,9 @@ function FooterBots() {
         }}>
           <span>© 2026 Checkpoint, Inc.</span>
           <span style={{ display: 'flex', gap: 24 }}>
-            <a href="#how">How it works</a>
-            <a href="#who">Who it's for</a>
-            <a href="#cta">Get started</a>
+            <a href="#solution">What we do</a>
+            <a href="#/waitlist">Waitlist</a>
+            <a href="#/">Home</a>
           </span>
         </div>
       </Container>
@@ -1890,10 +1607,10 @@ function FooterBots() {
 }
 
 /* ------------------------------------------------------------------ */
-/* CONTACT PAGE                                                         */
+/* WAITLIST PAGE                                                        */
 /* ------------------------------------------------------------------ */
 
-/* Single source of truth for where inquiries land. */
+/* Single source of truth for where signups land. */
 const CONTACT_EMAIL = 'support@trycheckpoint.ca';
 
 /* Bespoke envelope mark, drawn to match the page's stroke-icon idiom
@@ -1908,61 +1625,46 @@ function EnvelopeMark({ size = 22 }) {
   );
 }
 
-function ContactPage() {
+function WaitlistPage() {
   const { Button } = CK;
-  const [name, setName] = useState('');
-  const [studio, setStudio] = useState('');
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
+  const [joined, setJoined] = useState(false);
 
-  const send = (e) => {
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  const join = (e) => {
     if (e) e.preventDefault();
-    const subject = studio
-      ? `Checkpoint inquiry from ${studio}`
-      : (name ? `Checkpoint inquiry from ${name}` : 'Checkpoint inquiry');
-    const lines = [];
-    if (name)   lines.push(`Name: ${name}`);
-    if (studio) lines.push(`Studio: ${studio}`);
-    if (email)  lines.push(`Reply to: ${email}`);
-    lines.push('');
-    lines.push(message || '');
-    const href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n'))}`;
+    if (!valid) return;
+    /* No backend yet, so the signup is delivered as a prefilled mail to us.
+       This opens the user's mail client without unloading the page, so the
+       confirmation state below still renders. */
+    const href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Waitlist signup')}` +
+      `&body=${encodeURIComponent('Add me to the Checkpoint waitlist: ' + email.trim())}`;
     window.location.href = href;
-  };
-
-  const fieldLabel = {
-    fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-micro)',
-    letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
-    color: 'var(--text-muted)', marginBottom: 6, display: 'block',
-  };
-  const fieldBox = {
-    width: '100%', padding: '11px 13px', borderRadius: 'var(--radius-md)',
-    background: 'var(--surface-inset)', border: '1px solid var(--border-subtle)',
-    color: 'var(--text-body)', fontFamily: 'var(--font-sans)', fontSize: 'var(--fs-small)',
-    lineHeight: 1.5, outline: 'none',
+    setJoined(true);
   };
 
   return (
-    <section className="ck-section" id="contact">
+    <section className="ck-section" id="waitlist">
       <Container>
         <div style={{
-          display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: 48, alignItems: 'start',
+          display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: 48, alignItems: 'center',
         }} className="ck-contact-grid">
-          {/* left: pitch + direct email */}
+          {/* left: the pitch */}
           <Reveal>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'flex-start' }}>
+            <div className="ck-sr" style={{ display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'flex-start' }}>
               <span style={{ color: 'var(--accent)' }}><EnvelopeMark /></span>
-              <Overline>Contact</Overline>
+              <Overline>Waitlist</Overline>
               <h2 className="ck-h-section" style={{ maxWidth: 420 }}>
-                Tell us about your game.
+                Get early access to Checkpoint.
               </h2>
               <p className="ck-lede" style={{ maxWidth: 420 }}>
-                Whether you want to fill thin lobbies, ship realistic opponents at launch, or just see
-                how Checkpoint plays, send us a note. We read every message and reply ourselves.
+                We are onboarding studios in small batches. Leave your email and we will reach out
+                when a spot opens, with a build you can drop our bots into and test for yourself.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
                 <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
-                  Prefer your own mail client?
+                  Rather email us directly?
                 </span>
                 <a href={`mailto:${CONTACT_EMAIL}`} className="ck-mono"
                   style={{ fontSize: 'var(--fs-small)', color: 'var(--accent)',
@@ -1974,43 +1676,59 @@ function ContactPage() {
             </div>
           </Reveal>
 
-          {/* right: inquiry form */}
+          {/* right: the signup card (dark-beige top accent = second scheme colour) */}
           <Reveal delay={80}>
-            <form onSubmit={send} style={{
-              display: 'flex', flexDirection: 'column', gap: 18,
-              padding: 28, borderRadius: 'var(--radius-xl)',
+            <div className="ck-sr" style={{
+              borderRadius: 'var(--radius-xl)', overflow: 'hidden',
               background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="ck-contact-row">
-                <div>
-                  <label style={fieldLabel} htmlFor="ck-c-name">Your name</label>
-                  <input id="ck-c-name" type="text" style={fieldBox} placeholder="Jamie Rivera"
-                    value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-                <div>
-                  <label style={fieldLabel} htmlFor="ck-c-studio">Studio</label>
-                  <input id="ck-c-studio" type="text" style={fieldBox} placeholder="Northlight Games"
-                    value={studio} onChange={(e) => setStudio(e.target.value)} />
-                </div>
+              <div style={{ height: 4, background: 'var(--beige-dark)' }}></div>
+              <div style={{ padding: 28 }}>
+                {joined ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: 42, height: 42, borderRadius: 'var(--radius-md)',
+                      background: 'var(--healthy-bg)', color: 'var(--healthy)',
+                    }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M5 12.5l4.5 4.5L19 7" />
+                      </svg>
+                    </span>
+                    <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-semibold)',
+                      color: 'var(--text-strong)', letterSpacing: 'var(--tracking-snug)' }}>
+                      You are on the list.
+                    </div>
+                    <p style={{ margin: 0, fontSize: 'var(--fs-body)', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
+                      We saved {email.trim()} and will be in touch when the next batch opens.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={join} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <label className="ck-mono" htmlFor="ck-wl-email" style={{
+                      fontSize: 'var(--fs-micro)', letterSpacing: 'var(--tracking-caps)',
+                      textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                      Work email
+                    </label>
+                    <input id="ck-wl-email" type="email" required placeholder="you@studio.com"
+                      value={email} onChange={(e) => setEmail(e.target.value)}
+                      style={{
+                        width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-md)',
+                        background: 'var(--surface-inset)', border: '1px solid var(--border-subtle)',
+                        color: 'var(--text-body)', fontFamily: 'var(--font-sans)',
+                        fontSize: 'var(--fs-body)', lineHeight: 1.5, outline: 'none',
+                      }} />
+                    <Button variant="primary" size="md" onClick={join} disabled={!valid}>
+                      Join the waitlist
+                    </Button>
+                    <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
+                      One email when your spot is ready. No spam.
+                    </span>
+                  </form>
+                )}
               </div>
-              <div>
-                <label style={fieldLabel} htmlFor="ck-c-email">Email</label>
-                <input id="ck-c-email" type="email" style={fieldBox} placeholder="you@studio.com"
-                  value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div>
-                <label style={fieldLabel} htmlFor="ck-c-msg">What do you need</label>
-                <textarea id="ck-c-msg" rows={5} style={{ ...fieldBox, resize: 'vertical', minHeight: 120 }}
-                  placeholder="Tell us about your game, your lobbies, and what you are trying to solve."
-                  value={message} onChange={(e) => setMessage(e.target.value)} />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                <Button variant="primary" size="md" onClick={send}>Send inquiry</Button>
-                <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
-                  Opens your email, ready to send
-                </span>
-              </div>
-            </form>
+            </div>
           </Reveal>
         </div>
       </Container>
@@ -2018,11 +1736,11 @@ function ContactPage() {
   );
 }
 
-function ContactApp({ view }) {
+function WaitlistApp({ view }) {
   return (
     <React.Fragment>
       <Nav view={view} />
-      <ContactPage />
+      <WaitlistPage />
       <FooterBots />
     </React.Fragment>
   );
@@ -2037,7 +1755,7 @@ function ContactApp({ view }) {
    anchor like '#how' returns null so native scrolling is untouched. */
 function parseRoute(hash) {
   if (hash === '#/ai-bots') return 'aibots';
-  if (hash === '#/contact') return 'contact';
+  if (hash === '#/waitlist') return 'waitlist';
   if (hash.indexOf('#/') === 0) return 'home';
   return null;
 }
@@ -2059,16 +1777,15 @@ function HomeApp({ view }) {
   );
 }
 
+/* Kept deliberately short: hook, what we do plus proof, then the ask.
+   The problem / who-it's-for / why-now sections were cut so this page does
+   not re-tread the home page's structure. */
 function BotsApp({ view }) {
   return (
     <React.Fragment>
       <Nav view={view} />
       <HeroBots />
-      <ProblemBots />
       <SolutionBots />
-      <HowItWorksBots />
-      <WhoItsFor />
-      <WhyNow />
       <CTABots />
       <FooterBots />
     </React.Fragment>
@@ -2089,9 +1806,16 @@ function App() {
 
   useEffect(() => { window.scrollTo(0, 0); }, [view]);
 
-  if (view === 'aibots') return <BotsApp view={view} />;
-  if (view === 'contact') return <ContactApp view={view} />;
-  return <HomeApp view={view} />;
+  const page = view === 'aibots'   ? <BotsApp view={view} />
+             : view === 'waitlist' ? <WaitlistApp view={view} />
+             : <HomeApp view={view} />;
+
+  return (
+    <React.Fragment>
+      <div className="ck-scroll-progress" aria-hidden="true"></div>
+      {page}
+    </React.Fragment>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
