@@ -141,11 +141,11 @@ img { display: block; max-width: 100%; }
    so it never blocks the copy or links. */
 .ck-splash__dummy {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  opacity: 0.92;
-  /* central column reveal: show the full head + torso + limbs as the
-     interactive centerpiece, fading the edges so the side copy stays clean */
-  -webkit-mask-image: radial-gradient(34% 88% at 50% 46%, #000 62%, transparent 100%);
-  mask-image: radial-gradient(34% 88% at 50% 46%, #000 62%, transparent 100%);
+  opacity: 0.32;
+  /* narrow elliptical fade so only the central head+torso column shows and
+     the wide arms melt away to keep the side copy from overlapping the body */
+  -webkit-mask-image: radial-gradient(26% 76% at 50% 44%, #000 46%, transparent 100%);
+  mask-image: radial-gradient(26% 76% at 50% 44%, #000 46%, transparent 100%);
 }
 .ck-splash__dummy canvas { display: block; }
 /* thin diagonal, echoing the reference layout */
@@ -186,9 +186,9 @@ img { display: block; max-width: 100%; }
   .ck-splash__title { font-size: clamp(2.75rem, 15vw, 5rem); bottom: auto; top: 15%; }
   .ck-splash__intro { top: auto; bottom: 16%; left: clamp(20px, 5vw, 64px); right: clamp(20px, 5vw, 64px); width: auto; }
   .ck-splash__line { display: none; }
-  .ck-splash__dummy { opacity: 0.72; }
+  .ck-splash__dummy { opacity: 0.26; }
 }
-@media (prefers-reduced-motion: reduce) { .ck-splash__dummy { opacity: 0.85; } }
+@media (prefers-reduced-motion: reduce) { .ck-splash__dummy { opacity: 0.28; } }
 
 .ck-hero__grid {
   position: relative; z-index: 1;
@@ -283,10 +283,15 @@ img { display: block; max-width: 100%; }
 
 /* ---- Entrance animation --------------------------------- */
 /* Content is always visible. Transitions freeze when backgrounded, so the
-   end-state must never depend on one running. is-in adds a one-shot lift. */
+   end-state must never depend on one running. is-in adds a one-shot slide-in
+   as each section scrolls into view (more pronounced than the DS default). */
 .ck-reveal { opacity: 1; }
 @media (prefers-reduced-motion: no-preference) {
-  .ck-reveal.is-in { animation: ck-stream-in var(--dur-slow) var(--ease-out) both; }
+  .ck-reveal.is-in { animation: ck-reveal-in 0.72s var(--ease-out) both; }
+}
+@keyframes ck-reveal-in {
+  from { opacity: 0; transform: translateY(34px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ---- Shimmer progress bar ------------------------------- */
@@ -634,7 +639,7 @@ function Splash() {
       <div className="ck-splash__dummy" id="splash-dummy" aria-hidden="true"></div>
       <span className="ck-splash__line" aria-hidden="true"></span>
       <div className="ck-splash__inner">
-        <h1 className="ck-splash__title">Checkpoint<span className="ck-splash__dot"></span></h1>
+        <h1 className="ck-splash__title">Checkpoint<br />AI<span className="ck-splash__dot"></span></h1>
         <div className="ck-splash__intro">
           <p className="ck-splash__lead">An always-on AI playtesting layer for every build.</p>
           <p className="ck-splash__sub">
