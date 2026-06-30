@@ -772,13 +772,11 @@ function Splash() {
         <div className="ck-splash__intro">
           <p className="ck-splash__lead">An always-on AI playtesting layer for every build.</p>
           <p className="ck-splash__sub">
-            Multimodal agents play your game like real players and stream back structured,
-            triage-ready reports: recordings, repro steps, crashes and balance data.
+            Agents play your game like real players and report the bugs, crashes, and
+            balance issues before your players ever see them.
           </p>
-          <p className="ck-splash__cta">Ready when you are. <a href="#reports">See a sample report</a></p>
         </div>
       </div>
-      <a className="ck-splash__scroll" href="#how" aria-label="Scroll to content">Scroll</a>
     </header>
   );
 }
@@ -1361,9 +1359,8 @@ function Footer() {
         }}>
           <span>© 2026 Checkpoint, Inc.</span>
           <span style={{ display: 'flex', gap: 24 }}>
-            <a href="#how">How it works</a>
-            <a href="#reports">Reports</a>
-            <a href="#cta">Get started</a>
+            <a href="#/ai-bots">AI Bots</a>
+            <a href="#/waitlist">Join Waitlist</a>
           </span>
         </div>
       </Container>
@@ -1527,11 +1524,6 @@ function HeroBots() {
               <a href="#/waitlist">
                 <Button variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} />}>
                   Join the waitlist
-                </Button>
-              </a>
-              <a href="#solution">
-                <Button variant="secondary" size="lg" iconLeft={<Icon name="play" size={15} />}>
-                  See how it plays
                 </Button>
               </a>
             </div>
@@ -1957,13 +1949,6 @@ function HomeApp({ view }) {
     <React.Fragment>
       <Nav view={view} />
       <Splash />
-      <Hero />
-      <HomeProof />
-      <Problem />
-      <HowItWorks />
-      <Reports />
-      <Why />
-      <Roadmap />
       <Footer />
     </React.Fragment>
   );
@@ -1977,9 +1962,6 @@ function BotsApp({ view }) {
     <React.Fragment>
       <Nav view={view} />
       <HeroBots />
-      <BotsProof />
-      <SolutionBots />
-      <CTABots />
       <FooterBots />
     </React.Fragment>
   );
