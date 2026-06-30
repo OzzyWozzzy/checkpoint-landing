@@ -790,7 +790,7 @@ function Nav({ view = 'home' }) {
           <Logo height={26} />
           <div className="ck-nav__links">
             <a className={`ck-nav__link${view === 'home' ? ' is-active' : ''}`} href="#/">Home</a>
-            <a className={`ck-nav__link${onBots ? ' is-active' : ''}`} href="#/ai-bots">AI Bots</a>
+            <a className={`ck-nav__link${onBots ? ' is-active' : ''}`} href="#/ai-bots">What we do</a>
             <a className="ck-nav__cta" href="#/waitlist">Join Waitlist</a>
           </div>
         </div>
@@ -1359,7 +1359,7 @@ function Footer() {
         }}>
           <span>© 2026 Checkpoint, Inc.</span>
           <span style={{ display: 'flex', gap: 24 }}>
-            <a href="#/ai-bots">AI Bots</a>
+            <a href="#/ai-bots">What we do</a>
             <a href="#/waitlist">Join Waitlist</a>
           </span>
         </div>
@@ -1503,42 +1503,80 @@ function LobbyStrip() {
   );
 }
 
-function HeroBots() {
-  const { Button } = CK;
+/* "What we do" page header: sets up the two products. */
+function WhatWeDoHero() {
   return (
-    <header className="ck-hero">
+    <header className="ck-hero" style={{ paddingBottom: 48 }}>
       <div className="ck-hero__glow"></div>
       <div className="ck-hero-mesh" aria-hidden="true"></div>
       <Container>
-        <div className="ck-hero__grid">
-          <div className="ck-hero__copy">
-            <Overline>Checkpoint AI Bots · for game studios</Overline>
-            <h1 className="ck-display-xl ck-rise">
-              You can't tell which one is the <span className="ck-grad-text">bot</span>.
-            </h1>
-            <p className="ck-lede ck-rise-2" style={{ maxWidth: 500 }}>
-              We train models on real player data to build bots that aim, move, and miss like people.
-              Drop them into thin lobbies or empty NPC slots and your players stop noticing.
-            </p>
-            <div className="ck-hero__ctas ck-rise-3">
-              <a href="#/waitlist">
-                <Button variant="primary" size="lg" iconRight={<Icon name="arrow" size={16} />}>
-                  Join the waitlist
-                </Button>
-              </a>
-            </div>
-            <div className="ck-hero__trust">
-              <span>Drop-in integration</span>
-              <span className="dot"></span>
-              <span>Trained on real play</span>
-              <span className="dot"></span>
-              <span>Runs live in-match</span>
-            </div>
-          </div>
-          <Reveal delay={80}><div className="ck-elevate"><LobbyStrip /></div></Reveal>
+        <div style={{ maxWidth: 760 }}>
+          <Overline>Checkpoint · for game studios</Overline>
+          <h1 className="ck-display-xl ck-rise">
+            What we <span className="ck-grad-text">do</span>.
+          </h1>
+          <p className="ck-lede ck-rise-2" style={{ maxWidth: 560 }}>
+            Two products for game studios. AI playtesting that finds problems before launch, and
+            human-like bots that keep your lobbies full.
+          </p>
         </div>
       </Container>
     </header>
+  );
+}
+
+/* Section one: the AI playtesting (QA) product. */
+function QASection() {
+  return (
+    <section className="ck-section" id="qa">
+      <Container>
+        <div className="ck-solution-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 44, alignItems: 'center' }}>
+          <Reveal>
+            <div className="ck-sr" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <Overline>AI playtesting</Overline>
+              <h2 className="ck-h-section">Find the bugs before your players do.</h2>
+              <p className="ck-lede">
+                Checkpoint runs AI agents that play your game like real players on every build. They
+                catch crashes, bugs, and balance issues, and report each one with a recording and the
+                steps to reproduce it.
+              </p>
+            </div>
+          </Reveal>
+          <Reveal delay={90}><div className="ck-elevate"><LiveRunPanel /></div></Reveal>
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* Section two: the AI bots product. */
+function BotsSection() {
+  const { Button } = CK;
+  return (
+    <section className="ck-section ck-band-sunken" id="bots">
+      <Container>
+        <div className="ck-solution-grid" style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 44, alignItems: 'center' }}>
+          <Reveal><div className="ck-elevate"><LobbyStrip /></div></Reveal>
+          <Reveal delay={90}>
+            <div className="ck-sr" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <Overline>AI bots</Overline>
+              <h2 className="ck-h-section">Bots that play like real people.</h2>
+              <p className="ck-lede">
+                We train models on real player data to build bots that aim, move, and miss like humans.
+                Drop them into thin lobbies or empty NPC slots and your players stop noticing.
+              </p>
+              <div>
+                <a href="#/waitlist">
+                  <Button variant="primary" size="md" iconRight={<Icon name="arrow" size={16} />}>
+                    Join the waitlist
+                  </Button>
+                </a>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </Container>
+    </section>
   );
 }
 
@@ -1961,7 +1999,9 @@ function BotsApp({ view }) {
   return (
     <React.Fragment>
       <Nav view={view} />
-      <HeroBots />
+      <WhatWeDoHero />
+      <QASection />
+      <BotsSection />
       <FooterBots />
     </React.Fragment>
   );
