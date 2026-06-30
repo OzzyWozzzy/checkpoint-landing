@@ -770,10 +770,10 @@ function Splash() {
       <div className="ck-splash__inner">
         <h1 className="ck-splash__title">Checkpoint<span className="ck-splash__dot"></span></h1>
         <div className="ck-splash__intro">
-          <p className="ck-splash__lead">An always-on AI playtesting layer for every build.</p>
+          <p className="ck-splash__lead">Creating interactive AI to transform game development.</p>
           <p className="ck-splash__sub">
-            Agents play your game like real players and report the bugs, crashes, and
-            balance issues before your players ever see them.
+            From playtesting that finds problems before launch to human-like bots that keep
+            your lobbies full, Checkpoint builds the AI behind better games.
           </p>
         </div>
       </div>
@@ -1525,6 +1525,73 @@ function WhatWeDoHero() {
   );
 }
 
+/* A clean, professional playtest report card (replaces the busy live panel). */
+function QAReport() {
+  const { Card, SeverityBadge, Metric, Tag, StatusPill } = CK;
+  const findings = [
+    { sev: 'critical', text: 'Crash on tutorial skip',                tag: 'stability' },
+    { sev: 'warning',  text: 'Boss unwinnable for casual loadout',    tag: 'balance' },
+    { sev: 'info',     text: 'Shop CTA sits below the fold',          tag: 'ux' },
+  ];
+  return (
+    <Card padded={false} style={{ width: '100%' }}>
+      {/* header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
+        borderBottom: '1px solid var(--border-hairline)' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 34, height: 34, borderRadius: 'var(--radius-md)', flex: 'none',
+          background: 'var(--surface-inset)', border: '1px solid var(--border-subtle)', color: 'var(--accent)' }}>
+          <Icon name="target" size={17} />
+        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-semibold)', color: 'var(--text-strong)' }}>
+            Playtest report
+          </span>
+          <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
+            Build 1.284 · 240 checks
+          </span>
+        </div>
+        <span style={{ marginLeft: 'auto', flex: 'none' }}>
+          <StatusPill status="passed">Complete</StatusPill>
+        </span>
+      </div>
+
+      {/* summary metrics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, padding: 16 }}>
+        <Metric label="Critical" value="3" level="critical" />
+        <Metric label="Warnings" value="7" level="warning" />
+        <Metric label="Coverage" value="92%" level="healthy" />
+      </div>
+
+      {/* findings */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 16px 16px' }}>
+        {findings.map((f, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '11px 12px', borderRadius: 'var(--radius-md)',
+            background: 'var(--surface-inset)', border: '1px solid var(--border-hairline)',
+          }}>
+            <SeverityBadge level={f.sev} />
+            <span style={{ flex: 1, fontSize: 'var(--fs-small)', color: 'var(--text-body)',
+              minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {f.text}
+            </span>
+            <Tag>{f.tag}</Tag>
+          </div>
+        ))}
+      </div>
+
+      {/* footer */}
+      <div style={{ padding: '11px 16px', borderTop: '1px solid var(--border-hairline)',
+        background: 'var(--surface-panel)' }}>
+        <span className="ck-mono" style={{ fontSize: 'var(--fs-caption)', color: 'var(--text-muted)' }}>
+          Every finding ships with a recording and steps to reproduce.
+        </span>
+      </div>
+    </Card>
+  );
+}
+
 /* Section one: the AI playtesting (QA) product. */
 function QASection() {
   return (
@@ -1542,7 +1609,7 @@ function QASection() {
               </p>
             </div>
           </Reveal>
-          <Reveal delay={90}><div className="ck-elevate"><LiveRunPanel /></div></Reveal>
+          <Reveal delay={90}><div className="ck-elevate"><QAReport /></div></Reveal>
         </div>
       </Container>
     </section>
